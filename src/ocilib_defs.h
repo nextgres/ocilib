@@ -1,36 +1,22 @@
 /*
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |                               OCILIB - C Driver for Oracle                              |
-    |                                                                                         |
-    |                                (C Wrapper for Oracle OCI)                               |
-    |                                                                                         |
-    |                              Website : http://www.ocilib.net                            |
-    |                                                                                         |
-    |             Copyright (c) 2007-2015 Vincent ROGIER <vince.rogier@ocilib.net>            |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |             This library is free software; you can redistribute it and/or               |
-    |             modify it under the terms of the GNU Lesser General Public                  |
-    |             License as published by the Free Software Foundation; either                |
-    |             version 2 of the License, or (at your option) any later version.            |
-    |                                                                                         |
-    |             This library is distributed in the hope that it will be useful,             |
-    |             but WITHOUT ANY WARRANTY; without even the implied warranty of              |
-    |             MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU           |
-    |             Lesser General Public License for more details.                             |
-    |                                                                                         |
-    |             You should have received a copy of the GNU Lesser General Public            |
-    |             License along with this library; if not, write to the Free                  |
-    |             Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.          |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-*/
-
-/* --------------------------------------------------------------------------------------------- *
- * $Id: ocilib_defs.h, Vincent Rogier $
- * --------------------------------------------------------------------------------------------- */
+ * OCILIB - C Driver for Oracle (C Wrapper for Oracle OCI)
+ *
+ * Website: http://www.ocilib.net
+ *
+ * Copyright (c) 2007-2018 Vincent ROGIER <vince.rogier@ocilib.net>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef OCILIB_OCILIB_DEFS_H_INCLUDED
 #define OCILIB_OCILIB_DEFS_H_INCLUDED
@@ -59,7 +45,7 @@
 
         #define OCI_VERSION_COMPILE OCI_12_1
         #define OCI_VERSION_RUNTIME OCI_12_1
-  
+
     #elif defined(OCI_FNCODE_LOBGETCONTENTTYPE)  /* = OCI_11_2 */
 
         #define OCI_VERSION_COMPILE OCI_11_2
@@ -112,7 +98,7 @@
 /* tries to enable Oracle 10g support for lobs > 4Go with OCILobxxx2() calls */
 
 #if defined(OCI_BIG_UINT_ENABLED) && defined(ORAXB8_DEFINED)
-  
+
     #define OCI_LOB2_API_ENABLED
 
 #endif
@@ -134,12 +120,12 @@
 
 #if  defined (OCI_CHARSET_ANSI)
 
-    typedef otext           dbtext;         
-  
+    typedef otext           dbtext;
+
 #else
- 
-    typedef unsigned short  dbtext;   
-    
+
+    typedef unsigned short  dbtext;
+
 #endif
 
 /* ********************************************************************************************* *
@@ -166,7 +152,7 @@
 
 /* -- external C pointers ---- */
 
-#define OCI_IPC_ORACLE          -1
+#define OCI_IPC_ORACLE          (-1)
 #define OCI_IPC_BOOLEAN          0
 #define OCI_IPC_VOID             1
 #define OCI_IPC_SHORT            2
@@ -197,47 +183,48 @@
 #define OCI_IPC_COLLECTION       24
 #define OCI_IPC_ITERATOR         25
 #define OCI_IPC_ELEMENT          26
-#define OCI_IPC_HASHTABLE        27
-#define OCI_IPC_THREAD           28
-#define OCI_IPC_MUTEX            29
-#define OCI_IPC_BIND             30
-#define OCI_IPC_REF              31
-#define OCI_IPC_DIRPATH          32
-#define OCI_IPC_NOTIFY           33
-#define OCI_IPC_EVENT            34
-#define OCI_IPC_ARRAY            35
-#define OCI_IPC_MSG              36
-#define OCI_IPC_ENQUEUE          37
-#define OCI_IPC_DEQUEUE          38
-#define OCI_IPC_AGENT            39
+#define OCI_IPC_NUMBER           27
+#define OCI_IPC_HASHTABLE        28
+#define OCI_IPC_THREAD           29
+#define OCI_IPC_MUTEX            30
+#define OCI_IPC_BIND             31
+#define OCI_IPC_REF              32
+#define OCI_IPC_DIRPATH          33
+#define OCI_IPC_NOTIFY           34
+#define OCI_IPC_EVENT            35
+#define OCI_IPC_ARRAY            36
+#define OCI_IPC_MSG              37
+#define OCI_IPC_ENQUEUE          38
+#define OCI_IPC_DEQUEUE          39
+#define OCI_IPC_AGENT            40
 
 /* ---- Internal pointers ----- */
 
-#define OCI_IPC_LIST             40
-#define OCI_IPC_LIST_ITEM        41
-#define OCI_IPC_BIND_ARRAY       42
-#define OCI_IPC_DEFINE           43
-#define OCI_IPC_DEFINE_ARRAY     44
-#define OCI_IPC_HASHENTRY        45
-#define OCI_IPC_HASHENTRY_ARRAY  46
-#define OCI_IPC_HASHVALUE        47
-#define OCI_IPC_THREADKEY        48
-#define OCI_IPC_OCIDATE          49
-#define OCI_IPC_TM               50
-#define OCI_IPC_RESULTSET_ARRAY  51
-#define OCI_IPC_PLS_SIZE_ARRAY   52
-#define OCI_IPC_PLS_RCODE_ARRAY  53
-#define OCI_IPC_SERVER_OUPUT     54
-#define OCI_IPC_INDICATOR_ARRAY  55
-#define OCI_IPC_LEN_ARRAY        56
-#define OCI_IPC_BUFF_ARRAY       57
-#define OCI_IPC_LONG_BUFFER      58
-#define OCI_IPC_TRACE_INFO       59
-#define OCI_IPC_DP_COL_ARRAY     60
-#define OCI_IPC_BATCH_ERRORS     61
-#define OCI_IPC_STATEMENT_ARRAY  62
+#define OCI_IPC_LIST             41
+#define OCI_IPC_LIST_ITEM        42
+#define OCI_IPC_BIND_ARRAY       43
+#define OCI_IPC_DEFINE           44
+#define OCI_IPC_DEFINE_ARRAY     45
+#define OCI_IPC_HASHENTRY        46
+#define OCI_IPC_HASHENTRY_ARRAY  47
+#define OCI_IPC_HASHVALUE        48
+#define OCI_IPC_THREADKEY        49
+#define OCI_IPC_OCIDATE          50
+#define OCI_IPC_TM               51
+#define OCI_IPC_RESULTSET_ARRAY  52
+#define OCI_IPC_PLS_SIZE_ARRAY   53
+#define OCI_IPC_PLS_RCODE_ARRAY  54
+#define OCI_IPC_SERVER_OUPUT     55
+#define OCI_IPC_INDICATOR_ARRAY  56
+#define OCI_IPC_LEN_ARRAY        57
+#define OCI_IPC_BUFF_ARRAY       58
+#define OCI_IPC_LONG_BUFFER      59
+#define OCI_IPC_TRACE_INFO       60
+#define OCI_IPC_DP_COL_ARRAY     61
+#define OCI_IPC_BATCH_ERRORS     62
+#define OCI_IPC_STATEMENT_ARRAY  63
 
-#define OCI_IPC_COUNT            OCI_IPC_STATEMENT_ARRAY + 2
+#define OCI_IPC_COUNT            (OCI_IPC_STATEMENT_ARRAY + 2)
 
 /* --------------------------------------------------------------------------------------------- *
  * Oracle conditionnal features
@@ -349,12 +336,6 @@
 #define OCI_OUPUT_LSIZE_10G             32767
 
 /* --------------------------------------------------------------------------------------------- *
- *  Internal integer types
- * --------------------------------------------------------------------------------------------- */
-
-#define OCI_NUM_NUMBER                  0
-
-/* --------------------------------------------------------------------------------------------- *
 *  Undocumented OCI SQL TYPES
 * --------------------------------------------------------------------------------------------- */
 
@@ -368,34 +349,14 @@
 /* OCI unicode flag */
 
 #ifndef OCI_UTF16ID
-  
-    #define OCI_UTF16ID                   OCI_UCS2ID
+
+    #define OCI_UTF16ID OCI_UCS2ID
 
 #endif
 
-/* unicode constants */
 
-#define UNI_SHIFT             ((int) 10 )
-#define UNI_BASE              ((unsigned int) 0x0010000UL)
-#define UNI_MASK              ((unsigned int) 0x3FFUL)
-#define UNI_REPLACEMENT_CHAR  ((unsigned int) 0x0000FFFD)
-#define UNI_MAX_BMP           ((unsigned int) 0x0000FFFF)
-#define UNI_MAX_UTF16         ((unsigned int) 0x0010FFFF)
-#define UNI_MAX_UTF32         ((unsigned int) 0x7FFFFFFF)
-#define UNI_MAX_LEGAL_UTF32   ((unsigned int) 0x0010FFFF)
-#define UNI_SUR_HIGH_START    ((unsigned int) 0xD800)
-#define UNI_SUR_HIGH_END      ((unsigned int) 0xDBFF)
-#define UNI_SUR_LOW_START     ((unsigned int) 0xDC00)
-#define UNI_SUR_LOW_END       ((unsigned int) 0xDFFF)
-
-#define CVT_SRC_ILLEGAL         0
-#define CVT_SRC_EXHAUSTED      -1
-#define CVT_DST_EXHAUSTED      -2
-
-#define CVT_STRICT              0
-#define CVT_LENIENT             1
-
-#define UTF8_BYTES_PER_CHAR     4
+#define OCI_UTF8_BYTES_PER_CHAR 4
+#define OCI_SIZE_TMP_CVT        128
 
 /* --------------------------------------------------------------------------------------------- *
  * Local helper macros
@@ -408,11 +369,11 @@
 
 /* memory management helpers */
 
-#define OCI_FREE(ptr)                   OCI_MemFree(ptr), ptr = NULL;
+#define OCI_FREE(ptr)                   { OCI_MemFree(ptr), (ptr) = NULL; }
 
 /* indicator and nullity handlers */
 
-#define OCI_IND(exp)                    (sb2) ((exp) ? 0 : -1)  
+#define OCI_IND(exp)                    (sb2) ((exp) ? 0 : -1)
 
 #define OCI_NOT_USED(p)                 (p) = (p);
 
@@ -422,48 +383,159 @@
 
 #define OCI_LIB_THREADED                (OCILib.env_mode & OCI_ENV_THREADED)
 
-#define OCI_LIB_CONTEXT                 (OCILib.env_mode & OCI_ENV_CONTEXT)
-
-#define OCI_LIB_CALL_DECL_VAR(type, value)                                      \
+#define OCI_CALL_DECLARE_CONTEXT(status)                                        \
                                                                                 \
-    type    call_retval = (type) value;                                         \
-    boolean call_status = FALSE;                                                \
-    OCI_Error * call_err = NULL;                                                \
+    OCI_Context ctx_obj = { NULL, NULL, NULL, NULL, FALSE };                    \
+    OCI_Context* ctx = &ctx_obj;                                                \
+    ctx_obj.oci_err    = OCILib.err;                                            \
+    ctx_obj.call_status = (status);                                             \
 
-#define OCI_LIB_CALL_CHECK_CTX()                                                \
+#define OCI_CALL_DECLARE_VARIABLES(type, value, status)                         \
                                                                                 \
-    if (OCI_LIB_CONTEXT)                                                        \
+    type call_retval = (type) (value);                                          \
+    OCI_CALL_DECLARE_CONTEXT(status);                                           \
+
+#define OCI_CALL_CONTEXT_ENTER(mode)                                            \
+                                                                                \
+    if ((mode) & OCI_ENV_CONTEXT)                                               \
     {                                                                           \
-        call_err = OCI_ErrorGet(FALSE);                                         \
-        OCI_ContextCallEnter(call_err);                                         \
-    }    
+        ctx->call_err = OCI_ErrorGet(FALSE);                                    \
+        OCI_CallEnter(ctx);                                                     \
+    }
 
-#define OCI_LIB_CALL_ENTER(type, value)                                         \
+#define OCI_CALL_CONTEXT_EXIT(mode)                                             \
                                                                                 \
-	OCI_LIB_CALL_DECL_VAR(type, value)                                          \
-	OCI_LIB_CALL_CHECK_CTX()                                                    \
+    if ((mode) & OCI_ENV_CONTEXT)                                               \
+    {                                                                           \
+        OCI_CallExit(ctx);                                                      \
+    }
 
-#define OCI_LIB_CALL_EXIT()                                                     \
+#define OCI_CALL_ENTER(type, value)                                             \
+                                                                                \
+    OCI_CALL_DECLARE_VARIABLES(type, value, TRUE)                               \
+    OCI_CALL_CONTEXT_ENTER(OCILib.env_mode)                                     \
+
+#define OCI_CALL_EXIT()                                                         \
                                                                                 \
     ExitCall:                                                                   \
-    if (OCI_LIB_CONTEXT)                                                        \
-    {                                                                           \
-        OCI_ContextCallExit(call_err, call_status);                             \
-    }                                                                           \
+    OCI_CALL_CONTEXT_EXIT(OCILib.env_mode)                                      \
     return call_retval;
 
-#define OCI_LIB_CALL_GET_PROPERTY(object_type, object, type, value, prop)       \
-    \
-OCI_LIB_CALL_ENTER(type, value)\
-    \
-OCI_CHECK_PTR(object_type, object)\
-    \
-call_retval = object->prop;\
-call_status = TRUE;\
-    \
-OCI_LIB_CALL_EXIT()\
+#define OCI_CALL_JUMP_EXIT()                                                    \
+                                                                                \
+    goto ExitCall;                                                              \
+
+#define OCI_CALL_CONTEXT_SET(c, s, e)                                           \
+    ctx->lib_con      = (c);                                                    \
+    ctx->lib_stmt     = (s);                                                    \
+    ctx->oci_err      = (e) ? (e) : OCILib.err;                                 \
+
+#define OCI_CALL_CONTEXT_SET_FROM_CONN(con)   OCI_CALL_CONTEXT_SET((con), NULL, ((con) ? (con)->err : OCILib.err))
+#define OCI_CALL_CONTEXT_SET_FROM_OBJ(obj)    OCI_CALL_CONTEXT_SET(((obj)->con), NULL, ((obj)->err))
+#define OCI_CALL_CONTEXT_SET_FROM_ERR(err)    OCI_CALL_CONTEXT_SET(NULL, NULL, (err))
+#define OCI_CALL_CONTEXT_SET_FROM_STMT(stmt)  OCI_CALL_CONTEXT_SET(((stmt)->con), (stmt), ((stmt)->con->err))
+
+#define OCI_RAISE_EXCEPTION(exp)                                                \
+                                                                                \
+    exp;                                                                        \
+    OCI_STATUS = FALSE;                                                         \
+    OCI_CALL_JUMP_EXIT()                                                        \
+
+#define OCI_IS_PLSQL_STMT(type)                                                 \
+    ((OCI_CST_BEGIN == (type)) || (OCI_CST_DECLARE == (type)) || (OCI_CST_CALL == (type)))
+
+#define OCI_IS_OCI_NUMBER(type, subtype)                                        \
+   (OCI_CDT_NUMERIC == (type) && OCI_NUM_NUMBER == (subtype))
+
+#define OCI_IS_OCILIB_OBJECT(type, subtype)                                     \
+    ( (OCI_IS_OCI_NUMBER(type, subtype)) ||                                     \
+      (OCI_CDT_TEXT    != (type) &&                                             \
+       OCI_CDT_RAW     != (type) &&                                             \
+       OCI_CDT_BOOLEAN != (type)))
+
+#define OCI_GET_PROP(type, value, obj_type, obj, prop, con, stmt, err)          \
+                                                                                \
+    OCI_CALL_ENTER(type, value)                                                 \
+    OCI_CALL_CHECK_PTR(obj_type, obj)                                           \
+    OCI_CALL_CONTEXT_SET((con),(stmt), (err))                                   \
+    OCI_RETVAL = (type) ((obj)->prop);                                          \
+    OCI_CALL_EXIT()                                                             \
+
+#define OCI_SET_PROP(type, obj_type, obj, prop, value, con, stmt, err)          \
+                                                                                \
+    OCI_CALL_ENTER(boolean, FALSE)                                              \
+    OCI_CALL_CHECK_PTR(obj_type, obj)                                           \
+    OCI_CALL_CONTEXT_SET((con),(stmt), (err))                                   \
+    (obj)->prop = (type) (value);                                               \
+    OCI_RETVAL = OCI_STATUS;                                                    \
+    OCI_CALL_EXIT()                                                             \
+
+#define OCI_SET_PROP_ENUM(type, obj_type, obj, prop, value, enums, msg, con, stmt, err)\
+                                                                                \
+    OCI_CALL_ENTER(boolean, FALSE)                                              \
+    OCI_CALL_CHECK_PTR(obj_type, obj)                                           \
+    OCI_CALL_CONTEXT_SET((con),(stmt), (err))                                   \
+    OCI_CALL_CHECK_ENUM_VALUE((con),(stmt), (value), (enums), (msg))            \
+    (obj)->prop = (type) (value);                                               \
+    OCI_RETVAL = OCI_STATUS;                                                    \
+    OCI_CALL_EXIT()                                                             \
+
+#define OCI_GET_LIB_PROP(type, value, prop)                                     \
+                                                                                \
+    OCI_CALL_ENTER(type, value)                                                 \
+    OCI_CALL_CHECK_INITIALIZED()                                                \
+    OCI_RETVAL = (type) (prop);                                                 \
+    OCI_CALL_EXIT()                                                             \
+
+#define OCI_SET_LIB_PROP(prop, value)                                           \
+                                                                                \
+    OCI_CALL_ENTER(boolean, FALSE)                                              \
+    OCI_CALL_CHECK_INITIALIZED()                                                \
+    (prop) = (value);                                                           \
+    OCI_RETVAL = OCI_STATUS;                                                    \
+    OCI_CALL_EXIT()                                                             \
+
+#define OCI_ALLOCATE_BUFFER(type, ptr, size, count)                             \
+                                                                                \
+    if (OCI_STATUS && !(ptr))                                                   \
+    {                                                                           \
+        (ptr) = OCI_MemAlloc(type, size, (size_t) (count), TRUE);               \
+                                                                                \
+        OCI_STATUS = (NULL != (ptr));                                           \
+    }                                                                           \
+
+#define OCI_REALLOCATE_BUFFER(type, ptr, size, current, allocated, requested)   \
+                                                                                \
+    if (OCI_STATUS)                                                             \
+    {                                                                           \
+        if (!(ptr))                                                             \
+        {                                                                       \
+            (ptr) = OCI_MemAlloc(type, size, (size_t) (requested), TRUE);       \
+            if (ptr) (allocated) = (requested);                                 \
+        }                                                                       \
+        else if ((current) >= (allocated))                                      \
+        {                                                                       \
+            (ptr) = OCI_MemRealloc(ptr, type, size, (size_t) (requested), TRUE);\
+            if (ptr) (allocated) = (requested);                                 \
+        }                                                                       \
+                                                                                \
+        OCI_STATUS = (NULL != (ptr));                                           \
+    }                                                                           \
 
 
+#define OCI_ALLOCATE_DATA(type, ptr, count)                                     \
+                                                                                \
+    OCI_ALLOCATE_BUFFER(type, ptr, sizeof(*(ptr)), count)
+
+#define OCI_REALLOCATE_DATA(type, ptr, cur, alloc, inc)                         \
+                                                                                \
+    OCI_REALLOCATE_BUFFER(type, ptr, sizeof(*(ptr)), cur, alloc, inc)
+
+#define OCI_ARRAY_GET_AT(ptr, size, offset)  (((ub1 *) (ptr)) + (size_t)((size)*i))
+#define OCI_ARRAY_SET_AT(ptr, type, offset, value)  *(type*)(OCI_ARRAY_GET_AT(ptr, sizeof(type), i)) = (type) (value);
+
+
+#define OCI_STRING_VALID(s) ((s) && ((s)[0]))
 
 #ifdef _WINDOWS
 
@@ -477,9 +549,11 @@ OCI_LIB_CALL_EXIT()\
 
 #define OCI_SQLCMD_COUNT                126
 
-#define OCI_FMT_COUNT                   5
+#define OCI_FMT_COUNT                   6
 
 #define OCI_ERR_MSG_SIZE                512
+
+#define OCI_BIND_ARRAY_GROWTH_FACTOR    128
 
 #define OCI_DEF_ALIGN                   sizeof(void *)
 
@@ -487,23 +561,35 @@ OCI_LIB_CALL_EXIT()\
                                                                                \
     (((unsigned long)(amount)+((align)-1))&~((align)-1))
 
-#define OCI_SIZEOF_NUMBER               22
-#define OCI_SIZEOF_DATE                 7
-
 #define osizeof(s) (sizeof(s) / sizeof(otext))
 
-#define ocharcount(l) (l / sizeof(otext))
-#define dbcharcount(l) (l / sizeof(dbtext))
+#define ocharcount(l)  ((l) / sizeof(otext))
+#define dbcharcount(l) ((l) / sizeof(dbtext))
 
 #define OCI_ERR_AQ_LISTEN_TIMEOUT      25254
 #define OCI_ERR_AQ_DEQUEUE_TIMEOUT     25228
+#define OCI_ERR_SUB_BUG_OCI_UTF16      24915
 
 #define OCI_DEFAUT_STMT_CACHE_SIZE     20
 
 #define WCHAR_2_BYTES   0xFFFF
 #define WCHAR_4_BYTES   0x7FFFFFFF
 
-#define SCALE_FLOAT     -127
+#define SCALE_FLOAT     (-127)
+
+#define OCI_VARS_COUNT 1
+
+#define OCI_VARS_TRUE_VALUE "TRUE"
+
+#define OCI_VARS_WORKAROUND_UTF16_COLUMN_NAME  0
+
+#ifndef min
+  #define min(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+
+#ifndef max
+  #define max(a, b) (((a) > (b)) ? (a) : (b))
+#endif
 
 #endif    /* OCILIB_OCILIB_DEFS_H_INCLUDED */
 

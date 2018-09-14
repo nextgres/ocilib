@@ -1,36 +1,22 @@
 /*
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |                               OCILIB - C Driver for Oracle                              |
-    |                                                                                         |
-    |                                (C Wrapper for Oracle OCI)                               |
-    |                                                                                         |
-    |                              Website : http://www.ocilib.net                            |
-    |                                                                                         |
-    |             Copyright (c) 2007-2015 Vincent ROGIER <vince.rogier@ocilib.net>            |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |             This library is free software; you can redistribute it and/or               |
-    |             modify it under the terms of the GNU Lesser General Public                  |
-    |             License as published by the Free Software Foundation; either                |
-    |             version 2 of the License, or (at your option) any later version.            |
-    |                                                                                         |
-    |             This library is distributed in the hope that it will be useful,             |
-    |             but WITHOUT ANY WARRANTY; without even the implied warranty of              |
-    |             MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU           |
-    |             Lesser General Public License for more details.                             |
-    |                                                                                         |
-    |             You should have received a copy of the GNU Lesser General Public            |
-    |             License along with this library; if not, write to the Free                  |
-    |             Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.          |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-*/
-
-/* --------------------------------------------------------------------------------------------- *
- * $Id: exception.c, Vincent Rogier $
- * --------------------------------------------------------------------------------------------- */
+ * OCILIB - C Driver for Oracle (C Wrapper for Oracle OCI)
+ *
+ * Website: http://www.ocilib.net
+ *
+ * Copyright (c) 2007-2018 Vincent ROGIER <vince.rogier@ocilib.net>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "ocilib_internal.h"
 
@@ -38,7 +24,7 @@
  *                            STRINGS MESSAGES
  * ********************************************************************************************* */
 
-static otext * OCILib_TypeNames[OCI_IPC_COUNT] =
+static const otext * OCILib_TypeNames[OCI_IPC_COUNT] =
 {
     OTEXT("Oracle memory"),
 
@@ -70,6 +56,7 @@ static otext * OCILib_TypeNames[OCI_IPC_COUNT] =
     OTEXT("Collection handle"),
     OTEXT("Collection iterator handle"),
     OTEXT("Collection element handle"),
+    OTEXT("Number handle"),
     OTEXT("Hash Table handle"),
     OTEXT("Thread handle"),
     OTEXT("Mutex handle"),
@@ -110,7 +97,7 @@ static otext * OCILib_TypeNames[OCI_IPC_COUNT] =
 
 #if defined(OCI_CHARSET_WIDE) && !defined(_MSC_VER)
 
-static otext * OCILib_ErrorMsg[OCI_ERR_COUNT] =
+static const otext * OCILib_ErrorMsg[OCI_ERR_COUNT] =
 {
     OTEXT("No error"),
     OTEXT("OCILIB has not been initialized"),
@@ -139,12 +126,15 @@ static otext * OCILib_ErrorMsg[OCI_ERR_COUNT] =
     OTEXT("Name or position '%ls' previously binded with different data type"),
     OTEXT("Object '%ls' type does not match the requested object type"),
     OTEXT("Item '%ls' (type %d)  not found"),
-    OTEXT("Argument '%ls' : Invalid value %d")
+    OTEXT("Argument '%ls' : Invalid value %d"),
+    OTEXT("Cannot retrieve OCI environment from XA connection string '%ls'"),
+    OTEXT("Cannot connect to database using XA connection string '%ls'"),
+    OTEXT("Binding '%ls': Passing non NULL host variable is not allowed when bind allocation mode is internal")
 };
 
 #else
 
-static otext * OCILib_ErrorMsg[OCI_ERR_COUNT] =
+static const otext * OCILib_ErrorMsg[OCI_ERR_COUNT] =
 {
     OTEXT("No error"),
     OTEXT("OCILIB has not been initialized"),
@@ -173,12 +163,15 @@ static otext * OCILib_ErrorMsg[OCI_ERR_COUNT] =
     OTEXT("Name or position '%s' previously binded with different datatype"),
     OTEXT("Object '%s' type does not match the requested object type"),
     OTEXT("Item '%s' (type %d)  not found"),
-    OTEXT("Argument '%s' : Invalid value %d")
+    OTEXT("Argument '%s' : Invalid value %d"),
+    OTEXT("Cannot retrieve OCI environment from XA connection string '%s'"),
+    OTEXT("Cannot connect to database using XA connection string '%s'"),
+    OTEXT("Binding '%s': Passing non NULL host variable is not allowed when bind allocation mode is internal")
 };
 
 #endif
 
-static otext * OCILib_OraFeatures[OCI_FEATURE_COUNT] =
+static const otext * OCILib_OraFeatures[OCI_FEATURE_COUNT] =
 {
     OTEXT("Oracle 9.0 support for Unicode data"),
     OTEXT("Oracle 9.0 Timestamps and Intervals"),
@@ -194,11 +187,11 @@ static otext * OCILib_OraFeatures[OCI_FEATURE_COUNT] =
 
 typedef struct OCI_StmtStateTable
 {
-    int    state;
-    otext *name;
+    int state;
+    const otext *name;
 } OCI_StmtStateTable;
 
-static OCI_StmtStateTable OCILib_StmtStates[OCI_STMT_STATES_COUNT] =
+static const OCI_StmtStateTable OCILib_StmtStates[OCI_STMT_STATES_COUNT] =
 {
     { OCI_STMT_CLOSED,    OTEXT("closed")        },
     { OCI_STMT_PARSED,    OTEXT("parsed")        },
@@ -207,7 +200,7 @@ static OCI_StmtStateTable OCILib_StmtStates[OCI_STMT_STATES_COUNT] =
     { OCI_STMT_EXECUTED,  OTEXT("executed")      }
 };
 
-static otext * OCILib_DirPathStates[OCI_DPS_COUNT] =
+static const otext * OCILib_DirPathStates[OCI_DPS_COUNT] =
 {
     OTEXT("non prepared"),
     OTEXT("prepared"),
@@ -215,7 +208,7 @@ static otext * OCILib_DirPathStates[OCI_DPS_COUNT] =
     OTEXT("terminated")
 };
 
-static otext * OCILib_HandleNames[OCI_HDLE_COUNT] =
+static const otext * OCILib_HandleNames[OCI_HDLE_COUNT] =
 {
     OTEXT("OCI handle"),
     OTEXT("OCI descriptors"),
@@ -342,8 +335,8 @@ void OCI_ExceptionLoadingSharedLib
         err->libcode = OCI_ERR_LOADING_SHARED_LIB;
 
         osprintf(err->str, osizeof(err->str) - (size_t) 1,
-                  OCILib_ErrorMsg[OCI_ERR_LOADING_SHARED_LIB],
-                  OCI_DL_META_NAME);
+                OCILib_ErrorMsg[OCI_ERR_LOADING_SHARED_LIB],
+                OCI_DL_NAME);
     }
 
     OCI_ExceptionRaise(err);
@@ -738,7 +731,7 @@ void OCI_ExceptionStatementState
 
     if (err)
     {
-        int i, index = 0;
+        int index = 0;
 
         err->type    = OCI_ERR_OCILIB;
         err->libcode = OCI_ERR_STMT_STATE;
@@ -749,7 +742,7 @@ void OCI_ExceptionStatementState
             err->con = stmt->con;
         }
 
-        for(i = 0; i < OCI_STMT_STATES_COUNT; i++)
+        for(int i = 0; i < OCI_STMT_STATES_COUNT; i++)
         {
             if (state == OCILib_StmtStates[i].state)
             {
@@ -878,7 +871,7 @@ void OCI_ExceptionDirPathColNotFound
     if (err)
     {
         err->type    = OCI_ERR_OCILIB;
-        err->libcode = OCI_ERR_DIRPATH_STATE;
+        err->libcode = OCI_ERR_COLUMN_NOT_FOUND;
         err->stmt    = NULL;
 
         if (dp)
@@ -1057,7 +1050,7 @@ void OCI_ExceptionArgInvalidValue
     if (err)
     {
         err->type    = OCI_ERR_OCILIB;
-        err->libcode = OCI_ERR_ITEM_NOT_FOUND;
+        err->libcode = OCI_ERR_ARG_INVALID_VALUE;
         err->stmt    = stmt;
         err->con     = con;
 
@@ -1070,3 +1063,89 @@ void OCI_ExceptionArgInvalidValue
     OCI_ExceptionRaise(err);
 }
 
+/* --------------------------------------------------------------------------------------------- *
+* OCI_ExceptionEnvFromXaString
+* --------------------------------------------------------------------------------------------- */
+
+void OCI_ExceptionEnvFromXaString
+(
+    const otext *value
+)
+{
+    OCI_Error *err = OCI_ExceptionGetError();
+
+    if (err)
+    {
+        err->type    = OCI_ERR_OCILIB;
+        err->libcode = OCI_ERR_XA_ENV_FROM_STRING;
+        err->stmt    = NULL;
+        err->con     = NULL;
+
+        osprintf(err->str,
+            osizeof(err->str) - (size_t)1,
+            OCILib_ErrorMsg[OCI_ERR_XA_ENV_FROM_STRING],
+            value);
+    }
+
+    OCI_ExceptionRaise(err);
+}
+
+/* --------------------------------------------------------------------------------------------- *
+* OCI_ExceptionConnFromXaString
+* --------------------------------------------------------------------------------------------- */
+
+void OCI_ExceptionConnFromXaString
+(
+    const otext *value
+)
+{
+    OCI_Error *err = OCI_ExceptionGetError();
+
+    if (err)
+    {
+        err->type    = OCI_ERR_OCILIB;
+        err->libcode = OCI_ERR_XA_CONN_FROM_STRING;
+        err->stmt    = NULL;
+        err->con     = NULL;
+
+        osprintf(err->str,
+            osizeof(err->str) - (size_t)1,
+            OCILib_ErrorMsg[OCI_ERR_XA_CONN_FROM_STRING],
+            value);
+    }
+
+    OCI_ExceptionRaise(err);
+}
+
+/* --------------------------------------------------------------------------------------------- *
+* OCI_ExceptionExternalBindingNotAllowed
+* --------------------------------------------------------------------------------------------- */
+
+void OCI_ExceptionExternalBindingNotAllowed
+(
+    OCI_Statement *stmt,
+    const otext   *bind
+)
+{
+    OCI_Error *err = OCI_ExceptionGetError();
+
+    if (err)
+    {
+        err->type = OCI_ERR_OCILIB;
+        err->libcode = OCI_ERR_BIND_EXTERNAL_NOT_ALLOWED;
+        err->stmt = stmt;
+
+        if (stmt)
+        {
+            err->con = stmt->con;
+        }
+
+        osprintf(err->str,
+            osizeof(err->str) - (size_t)1,
+            OCILib_ErrorMsg[OCI_ERR_BIND_EXTERNAL_NOT_ALLOWED],
+            bind);
+    }
+
+    OCI_ExceptionRaise(err);
+
+}

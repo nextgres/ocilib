@@ -1,56 +1,38 @@
 /*
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |                               OCILIB - C Driver for Oracle                              |
-    |                                                                                         |
-    |                                (C Wrapper for Oracle OCI)                               |
-    |                                                                                         |
-    |                              Website : http://www.ocilib.net                            |
-    |                                                                                         |
-    |             Copyright (c) 2007-2015 Vincent ROGIER <vince.rogier@ocilib.net>            |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |             This library is free software; you can redistribute it and/or               |
-    |             modify it under the terms of the GNU Lesser General Public                  |
-    |             License as published by the Free Software Foundation; either                |
-    |             version 2 of the License, or (at your option) any later version.            |
-    |                                                                                         |
-    |             This library is distributed in the hope that it will be useful,             |
-    |             but WITHOUT ANY WARRANTY; without even the implied warranty of              |
-    |             MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU           |
-    |             Lesser General Public License for more details.                             |
-    |                                                                                         |
-    |             You should have received a copy of the GNU Lesser General Public            |
-    |             License along with this library; if not, write to the Free                  |
-    |             Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.          |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
+ * OCILIB - C Driver for Oracle (C Wrapper for Oracle OCI)
+ *
+ * Website: http://www.ocilib.net
+ *
+ * Copyright (c) 2007-2018 Vincent ROGIER <vince.rogier@ocilib.net>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |                                       IMPORTANT NOTICE                                  |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |             THIS FILE CONTAINS CONSTANTS AND STRUCTURES DECLARATIONS THAT WERE          |
-    |             PICKED UP FROM ORACLE PUBLIC HEADER FILES.                                  |
-    |                                                                                         |
-    |             SO THE CONTENT OF THIS FILE IS UNDER ORACLE COPYRIGHT AND THE               |
-    |             DECLARATIONS REPRODUCED HERE ARE ORIGINALLY WRITTEN BY ORACLE               |
-    |             CORPORATION.                                                                |
-    |                                                                                         |
-    |             THE AUTHOR OF OCILIB LIBRARY HAS NOT WRITTEN THE CONTENT OF THIS            |
-    |             FILE AND HAS PARTIALLY INTEGRATED SOME ORACLE OCI DEFINITONS TO             |
-    |             ALLOW COMPILATION OF THIS OPEN SOURCE LIBRARY WITHOUT HAVING                |
-    |             ORACLE PRODUCTS INSTALLED ON DEVELOPMENT ENVIRONMENTS                       |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-*/
-
-/* --------------------------------------------------------------------------------------------- *
- * $Id: oci_defs.h, Vincent Rogier $
- * --------------------------------------------------------------------------------------------- */
+/*
+ * IMPORTANT NOTICE
+ *
+ * THIS FILE CONTAINS CONSTANTS AND STRUCTURES DECLARATIONS THAT WERE
+ * PICKED UP FROM ORACLE PUBLIC HEADER FILES.
+ *
+ * SO THE CONTENT OF THIS FILE MAY BE UNDER ORACLE COPYRIGHT AND THE
+ * DECLARATIONS REPRODUCED HERE ARE ORIGINALLY WRITTEN BY ORACLE CORPORATION
+ *
+ * THE AUTHOR OF OCILIB LIBRARY HAS NOT WRITTEN THE CONTENT OF THIS
+ * FILE AND HAS PARTIALLY INTEGRATED SOME ORACLE OCI DEFINITONS TO 
+ * ALLOW COMPILATION OF THIS OPEN SOURCE LIBRARY WITHOUT HAVING
+ * ORACLE PRODUCTS INSTALLED ON DEVELOPMENT ENVIRONMENTS
+ *
+ */
 
 #ifndef OCILIB_OCI_DEFS_H_INCLUDED
 #define OCILIB_OCI_DEFS_H_INCLUDED
@@ -317,7 +299,13 @@
 
 #define OCI_ATTR_DESC_PUBLIC           250                  /* public object */
 
+#define OCI_ATTR_IS_SUBTYPE            258             /* Is this a subtype? */
+#define OCI_ATTR_SUPERTYPE_SCHEMA_NAME 259   /* Name of the supertype schema */
+#define OCI_ATTR_SUPERTYPE_NAME        260          /* Name of the supertype */
+
 #define OCI_ATTR_CLIENT_IDENTIFIER     278       /* value of client id to set*/
+
+#define OCI_ATTR_IS_FINAL_TYPE         279                /* is final type ? */
 
 #define OCI_ATTR_CHAR_USED             285          /* char length semantics */
 #define OCI_ATTR_CHAR_SIZE             286                    /* char length */
@@ -369,6 +357,11 @@
 
 /* session handle attribute */
 #define OCI_ATTR_MAX_OPEN_CURSORS          471
+
+/* add attribute for DBOP: DataBase OPeration */
+#define OCI_ATTR_DBOP                      485
+
+#define OCI_ATTR_COLLATION_ID              499               /* Collation ID */
 
 /*------- Temporary attribute value for UCS2/UTF16 character set ID -------- */
 
@@ -464,6 +457,8 @@
 #define OCI_OBJECT          0x00000002  /* application in object environment */
 #define OCI_EVENTS          0x00000004  /* application is enabled for events */
 #define OCI_UTF16           0x00004000        /* mode for all UTF16 metadata */
+#define OCI_NCHAR_LITERAL_REPLACE_ON  0x00400000 /* nchar literal replace on */
+#define OCI_NCHAR_LITERAL_REPLACE_OFF 0x00800000 /* nchar literal replace off*/
 
 /*------------------------Authentication Modes-------------------------------*/
 #define OCI_SYSDBA          0x00000002           /* for SYSDBA authorization */

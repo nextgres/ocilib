@@ -1,38 +1,82 @@
 /*
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |                               OCILIB - C Driver for Oracle                              |
-    |                                                                                         |
-    |                                (C Wrapper for Oracle OCI)                               |
-    |                                                                                         |
-    |                              Website : http://www.ocilib.net                            |
-    |                                                                                         |
-    |             Copyright (c) 2007-2015 Vincent ROGIER <vince.rogier@ocilib.net>            |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |             This library is free software; you can redistribute it and/or               |
-    |             modify it under the terms of the GNU Lesser General Public                  |
-    |             License as published by the Free Software Foundation; either                |
-    |             version 2 of the License, or (at your option) any later version.            |
-    |                                                                                         |
-    |             This library is distributed in the hope that it will be useful,             |
-    |             but WITHOUT ANY WARRANTY; without even the implied warranty of              |
-    |             MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU           |
-    |             Lesser General Public License for more details.                             |
-    |                                                                                         |
-    |             You should have received a copy of the GNU Lesser General Public            |
-    |             License along with this library; if not, write to the Free                  |
-    |             Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.          |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-*/
-
-/* --------------------------------------------------------------------------------------------- *
- * $Id: list.c, Vincent Rogier $
- * --------------------------------------------------------------------------------------------- */
+ * OCILIB - C Driver for Oracle (C Wrapper for Oracle OCI)
+ *
+ * Website: http://www.ocilib.net
+ *
+ * Copyright (c) 2007-2018 Vincent ROGIER <vince.rogier@ocilib.net>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "ocilib_internal.h"
+
+
+#define LIST_FOR_EACH(exp) \
+\
+    if (list)                               \
+    {                                       \
+        OCI_Item *item = NULL;              \
+        if (list->mutex )                   \
+        {                                   \
+            OCI_MutexAcquire(list->mutex);  \
+        }                                   \
+        item = list->head;                  \
+        while (item)                        \
+        {                                   \
+            exp;                            \
+            item = item->next;              \
+        }                                   \
+        if (list->mutex)                    \
+        {                                   \
+            OCI_MutexRelease(list->mutex);  \
+        }                                   \
+    }                                       \
+
+
+/* ********************************************************************************************* *
+ *                             LOCAL FUNCTIONS
+ * ********************************************************************************************* */
+
+/* --------------------------------------------------------------------------------------------- *
+ * OCI_ListCreateItem
+ * --------------------------------------------------------------------------------------------- */
+
+OCI_Item * OCI_ListCreateItem
+(
+    int type,
+    int size
+)
+{
+    OCI_Item *item = NULL;
+
+    /* allocate list item entry */
+
+    item = (OCI_Item *) OCI_MemAlloc(OCI_IPC_LIST_ITEM, sizeof(*item), (size_t) 1, TRUE);
+
+    if (item)
+    {
+        /* allocate item data buffer */
+
+        item->data = (void *) OCI_MemAlloc(type, (size_t) size, (size_t) 1, TRUE);
+
+        if (!item->data)
+        {
+            OCI_FREE(item)
+        }
+    }
+
+    return item;
+}
 
 /* ********************************************************************************************* *
  *                             PRIVATE FUNCTIONS
@@ -99,41 +143,10 @@ boolean OCI_ListFree
 }
 
 /* --------------------------------------------------------------------------------------------- *
- * OCI_ListCreateItem
- * --------------------------------------------------------------------------------------------- */
-
-OCI_Item * OCI_ListCreateItem
-(
-    int type,
-    int size
-)
-{
-    OCI_Item *item = NULL;
-
-    /* allocate list item entry */
-
-    item = (OCI_Item *) OCI_MemAlloc(OCI_IPC_LIST_ITEM, sizeof(*item), (size_t) 1, TRUE);
-
-    if (item)
-    {
-        /* allocate item data buffer */
-
-        item->data = (void *) OCI_MemAlloc(type, (size_t) size, (size_t) 1, TRUE);
-
-        if (!item->data)
-        {
-            OCI_FREE(item)
-        }
-    }
-
-    return item;
-}
-
-/* --------------------------------------------------------------------------------------------- *
  * OCI_ListAppend
  * --------------------------------------------------------------------------------------------- */
 
-OCI_Item * OCI_ListAppend
+void * OCI_ListAppend
 (
     OCI_List *list,
     int       size
@@ -176,7 +189,7 @@ OCI_Item * OCI_ListAppend
         OCI_MutexRelease(list->mutex);
     }
 
-    return item;
+    return item->data;
 }
 
 /* --------------------------------------------------------------------------------------------- *
@@ -234,29 +247,29 @@ boolean OCI_ListForEach
     POCI_LIST_FOR_EACH proc
 )
 {
-    OCI_Item *item = NULL;
+    OCI_CHECK(NULL == list, FALSE)
+    OCI_CHECK(NULL == proc, FALSE)
 
-    OCI_CHECK(NULL == list,  FALSE)
+    LIST_FOR_EACH(proc(item->data))
 
-    if (list->mutex)
-    {
-        OCI_MutexAcquire(list->mutex);
-    }
+    return TRUE;
+}
 
-    item = list->head;
+/* --------------------------------------------------------------------------------------------- *
+* OCI_ListForEachWithParam
+* --------------------------------------------------------------------------------------------- */
 
-    /* for each item in the list, execute the given callback */
+boolean OCI_ListForEachWithParam
+(
+    OCI_List          *list,
+    void              *param,
+    POCI_LIST_FOR_EACH_WITH_PARAM proc
+)
+{
+    OCI_CHECK(NULL == list, FALSE)
+    OCI_CHECK(NULL == proc, FALSE)
 
-    while (item)
-    {
-        proc(item->data);
-        item = item->next;
-    }
-
-    if (list->mutex)
-    {
-        OCI_MutexRelease(list->mutex);
-    }
+    LIST_FOR_EACH(proc(item->data, param))
 
     return TRUE;
 }
@@ -271,8 +284,9 @@ boolean OCI_ListRemove
     void     *data
 )
 {
-    OCI_Item *item = NULL;
-    OCI_Item *temp = NULL;
+    boolean   found = FALSE;
+    OCI_Item *item  = NULL;
+    OCI_Item *temp  = NULL;
 
     OCI_CHECK(NULL == list,  FALSE)
     OCI_CHECK(NULL == data, FALSE)
@@ -288,6 +302,8 @@ boolean OCI_ListRemove
     {
         if (item->data == data)
         {
+            found = TRUE;
+
             if (temp)
             {
                 temp->next = item->next;
@@ -310,7 +326,10 @@ boolean OCI_ListRemove
         item = item->next;
     }
 
-    list->count--;
+    if (found)
+    {
+        list->count--;
+    }
 
     if (list->mutex)
     {
@@ -318,4 +337,58 @@ boolean OCI_ListRemove
     }
 
     return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- *
+* OCI_ListExists
+* --------------------------------------------------------------------------------------------- */
+
+boolean OCI_ListExists
+(
+    OCI_List *list,
+    void     *data
+)
+{
+    boolean found = FALSE;
+
+    OCI_CHECK(NULL == list, FALSE)
+
+    LIST_FOR_EACH
+    (
+        if (item->data == data)
+        {
+            found = TRUE;
+            break;
+        }
+    )
+
+    return found;
+}
+
+/* --------------------------------------------------------------------------------------------- *
+* OCI_ListFind
+* --------------------------------------------------------------------------------------------- */
+
+void * OCI_ListFind
+(
+    OCI_List        *list,
+    POCI_LIST_FIND   proc,
+    void            *param
+)
+{
+    void * result = NULL;
+
+    OCI_CHECK(NULL == list, NULL)
+    OCI_CHECK(NULL == proc, NULL)
+
+    LIST_FOR_EACH
+    (
+        if (proc(item->data, param))
+        {
+            result = item->data;
+            break;
+        }
+    )
+
+    return result;
 }

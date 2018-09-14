@@ -1,45 +1,38 @@
 /*
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |                               OCILIB - C Driver for Oracle                              |
-    |                                                                                         |
-    |                                (C Wrapper for Oracle OCI)                               |
-    |                                                                                         |
-    |                              Website : http://www.ocilib.net                            |
-    |                                                                                         |
-    |             Copyright (c) 2007-2015 Vincent ROGIER <vince.rogier@ocilib.net>            |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |             This library is free software; you can redistribute it and/or               |
-    |             modify it under the terms of the GNU Lesser General Public                  |
-    |             License as published by the Free Software Foundation; either                |
-    |             version 2 of the License, or (at your option) any later version.            |
-    |                                                                                         |
-    |             This library is distributed in the hope that it will be useful,             |
-    |             but WITHOUT ANY WARRANTY; without even the implied warranty of              |
-    |             MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU           |
-    |             Lesser General Public License for more details.                             |
-    |                                                                                         |
-    |             You should have received a copy of the GNU Lesser General Public            |
-    |             License along with this library; if not, write to the Free                  |
-    |             Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.          |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-*/
-
-/* --------------------------------------------------------------------------------------------- *
- * $Id: library.c, Vincent Rogier $
- * --------------------------------------------------------------------------------------------- */
+ * OCILIB - C Driver for Oracle (C Wrapper for Oracle OCI)
+ *
+ * Website: http://www.ocilib.net
+ *
+ * Copyright (c) 2007-2018 Vincent ROGIER <vince.rogier@ocilib.net>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "ocilib_internal.h"
 
 /* ********************************************************************************************* *
  *                             INTERNAL VARIABLES
  * ********************************************************************************************* */
+
 OCI_Library OCILib;
 
-OCI_SQLCmdInfo SQLCmds[OCI_SQLCMD_COUNT] =
+const char * EnvironmentVarNames[OCI_VARS_COUNT] =
+{
+    VAR_OCILIB_WORKAROUND_UTF16_COLUMN_NAME
+};
+
+
+const OCI_SQLCmdInfo SQLCmds[OCI_SQLCMD_COUNT] =
 {
     {OCI_SFC_CREATE_TABLE,             OTEXT("CREATE TABLE")                                         },
     {OCI_SFC_SET_ROLE,                 OTEXT("SET ROLE")                                             },
@@ -167,22 +160,24 @@ OCI_SQLCmdInfo SQLCmds[OCI_SQLCMD_COUNT] =
     {OCI_SFC_ALTER_OPERATOR,           OTEXT("ALTER OPERATOR")                                       }
 };
 
-static unsigned int FormatTypeValues[] =
+static const unsigned int FormatTypeValues[] =
 {
     OCI_FMT_DATE,
     OCI_FMT_TIMESTAMP,
     OCI_FMT_NUMERIC,
     OCI_FMT_BINARY_DOUBLE,
-    OCI_FMT_BINARY_FLOAT
+    OCI_FMT_BINARY_FLOAT,
+    OCI_FMT_TIMESTAMP_TZ
 };
 
-static otext * FormatDefaultValues[OCI_FMT_COUNT] =
+static const otext * FormatDefaultValues[OCI_FMT_COUNT] =
 {
     OCI_STRING_FORMAT_DATE,
     OCI_STRING_FORMAT_TIMESTAMP,
     OCI_STRING_FORMAT_NUM,
     OCI_STRING_FORMAT_NUM_BDOUBLE,
-    OCI_STRING_FORMAT_NUM_BFLOAT
+    OCI_STRING_FORMAT_NUM_BFLOAT,
+    OCI_STRING_FORMAT_TIMESTAMP_TZ
 };
 
 #ifdef OCI_IMPORT_RUNTIME
@@ -305,9 +300,16 @@ OCINUMBERTOREAL              OCINumberToReal              = NULL;
 OCINUMBERFROMREAL            OCINumberFromReal            = NULL;
 OCINUMBERTOTEXT              OCINumberToText              = NULL;
 OCINUMBERFROMTEXT            OCINumberFromText            = NULL;
+OCINUMBERASSIGN              OCINumberAssign              = NULL;
+OCINUMBERADD                 OCINumberAdd                 = NULL;
+OCINUMBERSUB                 OCINumberSub                 = NULL;
+OCINUMBERMUL                 OCINumberMul                 = NULL;
+OCINUMBERDIV                 OCINumberDiv                 = NULL;
+OCINUMBERCMP                 OCINumberCmp                 = NULL;
 OCISTRINGPTR                 OCIStringPtr                 = NULL;
 OCISTRINGSIZE                OCIStringSize                = NULL;
 OCISTRINGASSIGNTEXT          OCIStringAssignText          = NULL;
+OCISTRINGRESIZE              OCIStringResize              = NULL;
 OCIRAWPTR                    OCIRawPtr                    = NULL;
 OCIRAWASSIGNBYTES            OCIRawAssignBytes            = NULL;
 OCIRAWRESIZE                 OCIRawResize                 = NULL;
@@ -321,6 +323,7 @@ OCIOBJECTPIN                 OCIObjectPin                 = NULL;
 OCIOBJECTUNPIN               OCIObjectUnpin               = NULL;
 OCIOBJECTCOPY                OCIObjectCopy                = NULL;
 OCIOBJECTGETOBJECTREF        OCIObjectGetObjectRef        = NULL;
+OCIOBJECTGETTYPEREF          OCIObjectGetTypeRef          = NULL;
 OCIOBJECTGETPROPERTY         OCIObjectGetProperty         = NULL;
 OCIOBJECTGETIND              OCIObjectGetInd              = NULL;
 OCIREFASSIGN                 OCIRefAssign                 = NULL;
@@ -557,6 +560,11 @@ boolean OCI_FreeObjectFromType(void *obj, unsigned int type)
 
     switch (type)
     {
+        case OCI_CDT_NUMERIC:
+        {
+            res = OCI_NumberFree((OCI_Number *)obj);
+            break;
+        }
         case OCI_CDT_DATETIME:
         {
             res = OCI_DateFree((OCI_Date *)obj);
@@ -614,13 +622,13 @@ boolean OCI_KeyMapFree
     boolean res      = TRUE;
     OCI_HashEntry *e = NULL;
     OCI_HashValue *v = NULL;
-    int i, n, nb_err = 0;
+    int nb_err       = 0;
 
     OCI_CHECK(NULL == OCILib.key_map, TRUE)
 
-    n = OCI_HashGetSize(OCILib.key_map);
+    const int n = OCI_HashGetSize(OCILib.key_map);
 
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
         e = OCI_HashGetEntry(OCILib.key_map, i);
 
@@ -650,41 +658,42 @@ boolean OCI_KeyMapFree
 }
 
 /* --------------------------------------------------------------------------------------------- *
- * OCI_ContextCallEnter
+ * OCI_CallEnter
  * --------------------------------------------------------------------------------------------- */
 
-void OCI_ContextCallEnter
+void OCI_CallEnter
 (
-    OCI_Error *err
+    OCI_Context *ctx
 )
 {
-    if (err)
+    if (ctx && ctx->call_err)
     {
-        if (err->depth == 0 && err->type != OCI_UNKNOWN)
+        if (ctx->call_err->depth == 0 && ctx->call_err->type != OCI_UNKNOWN)
         {
-            OCI_ErrorReset(err);
+            OCI_ErrorReset(ctx->call_err);
         }
 
-        err->depth++;
+        ctx->call_err->depth++;
     }
 }
 
 /* --------------------------------------------------------------------------------------------- *
-* OCI_ContextCallExit
+* OCI_CallExit
 * --------------------------------------------------------------------------------------------- */
 
-void OCI_ContextCallExit
+void OCI_CallExit
 (
-    OCI_Error *err,
-    boolean    success
+    OCI_Context *ctx
 )
 {
-    if (err)
+    if (ctx && ctx->call_err)
     {
-        if (err->depth > 0) err->depth--;
+        if (ctx->call_err->depth > 0) ctx->call_err->depth--;
 
-        err->raise = err->depth == 0 && err->type != OCI_UNKNOWN && (!success || (OCI_ERR_WARNING == err->type && OCILib.warnings_on));
-    }
+        ctx->call_err->raise = (ctx->call_err->depth == 0) &&
+                               (ctx->call_err->type != OCI_UNKNOWN) &&
+                               (!ctx->call_status || (OCI_ERR_WARNING == ctx->call_err->type && OCILib.warnings_on));
+    } 
 }
 
 /* ********************************************************************************************* *
@@ -702,8 +711,8 @@ boolean OCI_API OCI_Initialize
     unsigned int mode
 )
 {
-    boolean      res  = TRUE;
-    unsigned int i    = 0;
+    unsigned int i = 0;
+    ub4 oci_mode = OCI_ENV_MODE | OCI_OBJECT;
 
 #ifdef OCI_IMPORT_RUNTIME
 
@@ -713,12 +722,23 @@ boolean OCI_API OCI_Initialize
 
 #endif
 
+    OCI_CALL_DECLARE_VARIABLES(boolean, FALSE, TRUE)
+    OCI_CALL_CONTEXT_ENTER(mode)
+
     /* check if it was already initialized */
 
     if (OCILib.loaded)
     {
         return TRUE;
     }
+
+#if defined(OCI_CHARSET_WIDE) && (OCI_VERSION_COMPILE >= OCI_10_2)
+
+    /* activate support for N' substitution (nchar replacement in SQL statement strings) */
+
+    oci_mode |= OCI_NCHAR_LITERAL_REPLACE_ON;
+
+#endif
 
     memset(&OCILib, 0, sizeof(OCI_Library));
 
@@ -729,11 +749,20 @@ boolean OCI_API OCI_Initialize
 
     OCILib.env_mode             = mode;
     OCILib.charset              = (sizeof(otext) == sizeof(wchar_t)) ? OCI_CHAR_WIDE : OCI_CHAR_ANSI;
-    OCILib.use_wide_char_conv   = (OCILib.charset == OCI_CHAR_WIDE &&  (WCHAR_MAX == WCHAR_4_BYTES));
+    OCILib.use_wide_char_conv   = (OCILib.charset == OCI_CHAR_WIDE && (WCHAR_MAX == WCHAR_4_BYTES));
 
     for (i = 0; i < OCI_FMT_COUNT; i++)
     {
         OCILib.formats[i] = ostrdup(FormatDefaultValues[i]);
+    }
+
+    /* load any specific environment variable */
+
+    for (i = 0; i < OCI_VARS_COUNT; i++)
+    {
+        char *value = getenv(EnvironmentVarNames[i]);
+
+        OCILib.env_vars[i] = value && (ocistrcasecmp(value, OCI_VARS_TRUE_VALUE) == 0 || atoi(value) == 1);
     }
 
     /* test for UTF8 environment */
@@ -795,13 +824,13 @@ boolean OCI_API OCI_Initialize
 
     #endif
 
-    if ((len > (size_t) 0) && (len < sizeof(path)) && (OCI_CHAR_SLASH != path[len - (size_t) 1]))
+    if ((len > (size_t) 0) && (len < sizeof(path) -1) && (OCI_CHAR_SLASH != path[len - (size_t) 1]))
     {
         path[len] = OCI_CHAR_SLASH;
         len++;
     }
 
-    strncat(path, OCI_DL_ANSI_NAME, sizeof(path) - len);
+    strncat(path, OCI_DL_ANSI_NAME, sizeof(path) - len - 1);
 
     OCILib.lib_handle = LIB_OPEN(path);
 
@@ -1072,16 +1101,26 @@ boolean OCI_API OCI_Initialize
                    OCINUMBERTOINT);
         LIB_SYMBOL(OCILib.lib_handle, "OCINumberFromInt", OCINumberFromInt,
                    OCINUMBERFROMINT);
-
         LIB_SYMBOL(OCILib.lib_handle, "OCINumberToReal", OCINumberToReal,
                    OCINUMBERTOREAL);
         LIB_SYMBOL(OCILib.lib_handle, "OCINumberFromReal", OCINumberFromReal,
                    OCINUMBERFROMREAL);
-
         LIB_SYMBOL(OCILib.lib_handle, "OCINumberToText", OCINumberToText,
                    OCINUMBERTOTEXT);
         LIB_SYMBOL(OCILib.lib_handle, "OCINumberFromText", OCINumberFromText,
                    OCINUMBERFROMTEXT);
+        LIB_SYMBOL(OCILib.lib_handle, "OCINumberAssign", OCINumberAssign,
+                   OCINUMBERASSIGN);
+        LIB_SYMBOL(OCILib.lib_handle, "OCINumberAdd", OCINumberAdd,
+                   OCINUMBERADD);
+        LIB_SYMBOL(OCILib.lib_handle, "OCINumberSub", OCINumberSub,
+                   OCINUMBERSUB);
+        LIB_SYMBOL(OCILib.lib_handle, "OCINumberMul", OCINumberMul,
+                   OCINUMBERMUL);
+        LIB_SYMBOL(OCILib.lib_handle, "OCINumberDiv", OCINumberDiv,
+                   OCINUMBERDIV);
+        LIB_SYMBOL(OCILib.lib_handle, "OCINumberCmp", OCINumberCmp,
+                   OCINUMBERCMP);
 
         LIB_SYMBOL(OCILib.lib_handle, "OCIStringPtr", OCIStringPtr,
                    OCISTRINGPTR);
@@ -1089,7 +1128,8 @@ boolean OCI_API OCI_Initialize
                    OCISTRINGSIZE);
         LIB_SYMBOL(OCILib.lib_handle, "OCIStringAssignText", OCIStringAssignText,
                    OCISTRINGASSIGNTEXT);
-
+        LIB_SYMBOL(OCILib.lib_handle, "OCIStringResize", OCIStringResize,
+                   OCISTRINGRESIZE);
         LIB_SYMBOL(OCILib.lib_handle, "OCIRawPtr", OCIRawPtr,
                    OCIRAWPTR);
         LIB_SYMBOL(OCILib.lib_handle, "OCIRawAssignBytes", OCIRawAssignBytes,
@@ -1121,6 +1161,8 @@ boolean OCI_API OCI_Initialize
                    OCIOBJECTGETPROPERTY);
         LIB_SYMBOL(OCILib.lib_handle, "OCIObjectGetInd", OCIObjectGetInd,
                    OCIOBJECTGETIND);
+        LIB_SYMBOL(OCILib.lib_handle, "OCIObjectGetTypeRef", OCIObjectGetTypeRef,
+            OCIOBJECTGETOBJECTREF);
 
         LIB_SYMBOL(OCILib.lib_handle, "OCIRefAssign", OCIRefAssign,
                    OCIREFASSIGN);
@@ -1285,7 +1327,6 @@ boolean OCI_API OCI_Initialize
         LIB_SYMBOL(OCILib.lib_handle, "OCIStmtGetNextResult", OCIStmtGetNextResult,
                    OCISTMTGETNEXTRESULT);
 
-
         /* API Version checking */
 
         if (OCIStmtGetNextResult)
@@ -1316,7 +1357,7 @@ boolean OCI_API OCI_Initialize
         {
             OCILib.version_runtime = OCI_9_0;
         }
-        else if (OCIThreadProcessInit)
+        else if (OCIThreadCreate)
         {
             OCILib.version_runtime = OCI_8_1;
         }
@@ -1327,41 +1368,31 @@ boolean OCI_API OCI_Initialize
         else
         {
             LIB_CLOSE(OCILib.lib_handle);
-
-            OCI_ExceptionLoadingSymbols();
-
-            res = FALSE;
+            OCI_RAISE_EXCEPTION(OCI_ExceptionLoadingSymbols())
         }
     }
     else
     {
-        OCI_ExceptionLoadingSharedLib();
-
-        res = FALSE;
+        OCI_RAISE_EXCEPTION(OCI_ExceptionLoadingSharedLib())
     }
-
-    if (res)
-    {
 
     #if defined(OCI_BIG_UINT_ENABLED)
 
-        if ((OCILib.version_runtime >= OCI_10_1) && OCILobCopy2)
-        {
-            OCILib.use_lob_ub8 = TRUE;
-        }
+    if ((OCILib.version_runtime >= OCI_10_1) && OCILobCopy2)
+    {
+        OCILib.use_lob_ub8 = TRUE;
+    }
 
     #endif
 
     #if defined(OCI_STMT_SCROLLABLE_READONLY)
 
-        if ((OCILib.version_runtime >= OCI_9_0) && OCIStmtFetch2)
-        {
-            OCILib.use_scrollable_cursors = TRUE;
-        }
+    if ((OCILib.version_runtime >= OCI_9_0) && OCIStmtFetch2)
+    {
+        OCILib.use_scrollable_cursors = TRUE;
+    }
 
     #endif
-
-    }
 
 #endif
 
@@ -1369,125 +1400,103 @@ boolean OCI_API OCI_Initialize
 
     /* Oracle 8i does not support full Unicode mode */
 
-    if (res && (OCILib.version_runtime < OCI_9_0))
+    if (OCILib.version_runtime < OCI_9_0)
     {
-        OCI_ExceptionNotAvailable(NULL, OCI_FEATURE_WIDE_USERDATA);
-
-        res = FALSE;
+        OCI_RAISE_EXCEPTION(OCI_ExceptionNotAvailable(NULL, OCI_FEATURE_WIDE_USERDATA))
     }
 
 #endif
 
     /* Initialize OCI environment */
 
-    if (res)
+    if (mode & OCI_ENV_THREADED)
     {
-        ub4 oci_mode = OCI_ENV_MODE | OCI_OBJECT;
+        oci_mode |= OCI_THREADED;
+    }
 
-        /* check modes */
+    if (mode & OCI_ENV_EVENTS)
+    {
+        oci_mode |= OCI_EVENTS;
+    }
 
-        if (mode & OCI_ENV_THREADED)
-        {
-            oci_mode |= OCI_THREADED;
-        }
+    /* create environment on success */
 
-        if (mode & OCI_ENV_EVENTS)
-        {
-            oci_mode |= OCI_EVENTS;
-        }
+    OCI_STATUS = OCI_SUCCESSFUL(OCIEnvCreate(&OCILib.env, oci_mode,
+                                               (dvoid *) &OCILib,
+                                               OCI_MemAllocOracleClient,
+                                               OCI_MemReallocOracleClient,
+                                               OCI_MemFreeOracleClient,
+                                               (size_t) 0, (dvoid **) NULL));
 
-        /* create environment on success */
-
-        res = res && OCI_SUCCESSFUL(OCIEnvCreate(&OCILib.env, oci_mode,
-                                                 (dvoid *) &OCILib,
-                                                 OCI_MemAllocOracleClient,
-                                                 OCI_MemReallocOracleClient,
-                                                 OCI_MemFreeOracleClient,
-                                                 (size_t) 0, (dvoid **) NULL));
-
-        if (!res)
-        {
-            OCI_ExceptionOCIEnvironment();
-        }
-
-        /*  allocate error handle */
-
-        res = res && OCI_SUCCESSFUL(OCI_HandleAlloc((dvoid *) OCILib.env,
-                                                    (dvoid **) (void *) &OCILib.err,
-                                                    (ub4) OCI_HTYPE_ERROR,
-                                                    (size_t) 0, (dvoid **) NULL));
+    /*  allocate error handle */
+    if (OCI_STATUS)
+    {
+        OCI_STATUS = OCI_HandleAlloc((dvoid *)OCILib.env, (dvoid **) (void *) &OCILib.err, OCI_HTYPE_ERROR);
+    }
+    else
+    {
+        OCI_RAISE_EXCEPTION(OCI_ExceptionOCIEnvironment())
     }
 
     /* on success, we need to initialize OCIThread object support */
 
-    if (res)
+    if (OCI_STATUS)
     {
         if (OCI_LIB_THREADED)
         {
             OCIThreadProcessInit();
 
-            res = OCI_SUCCESSFUL(OCIThreadInit(OCILib.env, OCILib.err));
+            OCI_STATUS = OCI_SUCCESSFUL(OCIThreadInit(OCILib.env, OCILib.err));
 
             OCILib.mem_mutex = OCI_MutexCreateInternal();
-
-            res = (NULL != OCILib.mem_mutex);
+            OCI_STATUS = (NULL != OCILib.mem_mutex);
         }
 
         /* create thread key for thread errors */
 
-        if (res)
+        if (OCI_STATUS)
         {
             OCILib.key_errs = OCI_ThreadKeyCreateInternal((POCI_THREADKEYDEST) OCI_ErrorFree);
-
-            res = (NULL != OCILib.key_errs);
+            OCI_STATUS = (NULL != OCILib.key_errs);
         }
 
         /* allocate connections internal list */
 
-        if (res)
+        if (OCI_STATUS)
         {
             OCILib.cons = OCI_ListCreate(OCI_IPC_CONNECTION);
-
-            res = (NULL != OCILib.cons);
+            OCI_STATUS = (NULL != OCILib.cons);
         }
 
         /* allocate pools internal list */
 
-        if (res)
+        if (OCI_STATUS)
         {
-
             OCILib.pools = OCI_ListCreate(OCI_IPC_POOL);
-
-            res = (NULL != OCILib.pools);
+            OCI_STATUS = (NULL != OCILib.pools);
         }
 
     #if OCI_VERSION_COMPILE >= OCI_10_2
 
         /* allocate connection pools internal list */
 
-        if (res)
+        if (OCI_STATUS)
         {
-
             OCILib.subs = OCI_ListCreate(OCI_IPC_NOTIFY);
 
-            res = (NULL != OCILib.subs);
+            OCI_STATUS = (NULL != OCILib.subs);
         }
 
     #endif
 
-        if (res)
+        if (OCI_STATUS)
         {
-
             OCILib.arrs = OCI_ListCreate(OCI_IPC_ARRAY);
-
-            res = (NULL != OCILib.arrs);
+            OCI_STATUS = (NULL != OCILib.arrs);
         }
     }
 
-    if (res )
-    {
-        OCILib.loaded = TRUE;
-    }
+    OCILib.loaded = OCI_RETVAL = OCI_STATUS;
 
     /* test for XA support */
 
@@ -1501,7 +1510,7 @@ boolean OCI_API OCI_Initialize
     OCILib.use_xa = TRUE;
 #endif
 
-    return res;
+    OCI_CALL_EXIT()
 }
 
 /* --------------------------------------------------------------------------------------------- *
@@ -1572,19 +1581,21 @@ boolean OCI_API OCI_Cleanup
             OCI_MutexFree(mutex);
         }
 
-        OCI_CALL0
-        (
-            res, OCILib.err,
-
-            OCIThreadTerm(OCILib.env, OCILib.err)
-        )
+        res = OCI_SUCCESSFUL(OCIThreadTerm(OCILib.env, OCILib.err));
     }
 
     /* free error thread key */
 
     if (OCILib.key_errs)
-    {
-        OCI_ThreadKeyFree(OCILib.key_errs);
+    {        
+        OCI_ThreadKey *key = OCILib.key_errs;
+        OCI_Error     *err = OCI_ErrorGet(FALSE);
+
+        OCILib.key_errs = NULL;
+
+        OCI_ErrorFree(err);
+        OCI_ThreadKeySet(key, NULL);
+        OCI_ThreadKeyFree(key);
     }
 
     /* set unloaded flag */
@@ -1655,14 +1666,7 @@ unsigned int OCI_API OCI_GetOCICompileVersion
     void
 )
 {
-    OCI_LIB_CALL_ENTER(unsigned int, OCI_UNKNOWN)
-
-    OCI_CHECK_INITIALIZED()
-
-    call_retval = OCILib.version_compile;
-    call_status = TRUE;
-
-    OCI_LIB_CALL_EXIT()
+    OCI_GET_LIB_PROP(unsigned int, OCI_UNKNOWN, OCILib.version_compile)
 }
 
 /* --------------------------------------------------------------------------------------------- *
@@ -1674,14 +1678,7 @@ unsigned int OCI_API OCI_GetOCIRuntimeVersion
     void
 )
 {
-    OCI_LIB_CALL_ENTER(unsigned int, OCI_UNKNOWN)
-
-    OCI_CHECK_INITIALIZED()
-
-    call_retval = OCILib.version_runtime;
-    call_status = TRUE;
-
-    OCI_LIB_CALL_EXIT()
+    OCI_GET_LIB_PROP(unsigned int, OCI_UNKNOWN, OCILib.version_runtime)
 }
 
 /* --------------------------------------------------------------------------------------------- *
@@ -1693,14 +1690,7 @@ unsigned int OCI_API OCI_GetImportMode
     void
 )
 {
-    OCI_LIB_CALL_ENTER(unsigned int, OCI_UNKNOWN)
-
-    OCI_CHECK_INITIALIZED()
-
-    call_retval = (unsigned int) OCI_IMPORT_MODE;
-    call_status = TRUE;
-
-    OCI_LIB_CALL_EXIT()
+     OCI_GET_LIB_PROP(unsigned int, OCI_UNKNOWN, OCI_IMPORT_MODE)
 }
 
 /* --------------------------------------------------------------------------------------------- *
@@ -1712,14 +1702,7 @@ unsigned int OCI_API OCI_GetCharset
     void
 )
 {
-    OCI_LIB_CALL_ENTER(unsigned int, OCI_UNKNOWN)
-
-    OCI_CHECK_INITIALIZED()
-
-    call_retval = (unsigned int) OCI_CHAR_TEXT;
-    call_status = TRUE;
-
-    OCI_LIB_CALL_EXIT()
+    OCI_GET_LIB_PROP(unsigned int, OCI_UNKNOWN, OCI_CHAR_TEXT)
 }
 
 /* --------------------------------------------------------------------------------------------- *
@@ -1731,9 +1714,8 @@ big_uint OCI_API OCI_GetAllocatedBytes
     unsigned int mem_type
 )
 {
-    OCI_LIB_CALL_ENTER(big_uint, 0)
-
-    OCI_CHECK_INITIALIZED()
+    OCI_CALL_ENTER(big_uint, 0)
+    OCI_CALL_CHECK_INITIALIZED()
 
     if (mem_type & OCI_MEM_ORACLE)
     {
@@ -1745,9 +1727,7 @@ big_uint OCI_API OCI_GetAllocatedBytes
         call_retval += OCILib.mem_bytes_lib;
     }
 
-    call_status = TRUE;
-
-    OCI_LIB_CALL_EXIT()
+    OCI_CALL_EXIT()
 }
 
 /* --------------------------------------------------------------------------------------------- *
@@ -1761,7 +1741,7 @@ OCI_Error * OCI_API OCI_GetLastError
 {
     OCI_Error *err = NULL;
 
-    if (!OCILib.loaded || OCI_LIB_CONTEXT)
+    if (!OCILib.loaded || OCILib.env_mode & OCI_ENV_CONTEXT)
     {
         err = OCI_ErrorGet(TRUE);
 
@@ -1783,15 +1763,7 @@ boolean OCI_API OCI_EnableWarnings
     boolean value
 )
 {
-    OCI_LIB_CALL_ENTER(boolean, FALSE)
-
-    OCI_CHECK_INITIALIZED()
-
-    OCILib.warnings_on = value;
-
-    call_retval = call_status = TRUE;
-
-    OCI_LIB_CALL_EXIT()
+    OCI_SET_LIB_PROP(OCILib.warnings_on, value)
  }
 
 /* --------------------------------------------------------------------------------------------- *
@@ -1803,16 +1775,7 @@ boolean OCI_API OCI_SetErrorHandler
     POCI_ERROR handler
 )
 {
-    OCI_LIB_CALL_ENTER(boolean, FALSE)
-
-    OCI_CHECK_INITIALIZED()
-
-    OCILib.error_handler = handler;
-
-    call_retval = call_status = TRUE;
-
-    OCI_LIB_CALL_EXIT()
-
+    OCI_SET_LIB_PROP(OCILib.error_handler, handler)
 }
 
 /* --------------------------------------------------------------------------------------------- *
@@ -1832,13 +1795,10 @@ boolean OCI_API OCI_DatabaseStartup
 {
     OCI_Connection *con = NULL;
 
-    OCI_LIB_CALL_ENTER(boolean, FALSE)
-
-    OCI_CHECK_REMOTE_DBS_CONTROL_ENABLED()
+    OCI_CALL_ENTER(boolean, FALSE)
+    OCI_CALL_CHECK_REMOTE_DBS_CONTROL_ENABLED()
 
 #if OCI_VERSION_COMPILE >= OCI_10_2
-
-    call_status = TRUE;
 
     if (start_mode & OCI_DB_SPM_START)
     {
@@ -1848,9 +1808,9 @@ boolean OCI_API OCI_DatabaseStartup
 
         con = OCI_ConnectionCreate(db, user, pwd, sess_mode | OCI_PRELIM_AUTH);
 
-        call_status = (NULL != con);
+        OCI_STATUS = (NULL != con);
 
-        if (call_status)
+        if (OCI_STATUS)
         {
             if (spfile && spfile[0])
             {
@@ -1859,35 +1819,20 @@ boolean OCI_API OCI_DatabaseStartup
 
                 /* allocate administration handle */
 
-                call_status = OCI_SUCCESSFUL(OCI_HandleAlloc((dvoid *) OCILib.env,
-                                                             (dvoid **) (void *) &adm,
-                                                             (ub4) OCI_HTYPE_ADMIN,
-                                                             (size_t) 0, (dvoid **) NULL));
+                OCI_STATUS = OCI_HandleAlloc((dvoid *)OCILib.env,  (dvoid **) (void *) &adm, OCI_HTYPE_ADMIN);
 
                 /* set client file if provided */
 
                 dbstr = OCI_StringGetOracleString(spfile, &dbsize);
 
-                OCI_CALL2
-                (
-                    call_status, con,
-
-                    OCIAttrSet((dvoid *) adm, (ub4) OCI_HTYPE_ADMIN,
-                               (dvoid *) dbstr, (ub4) dbsize,
-                               (ub4) OCI_ATTR_ADMIN_PFILE, con->err)
-                )
+                OCI_SET_ATTRIB(OCI_HTYPE_ADMIN, OCI_ATTR_ADMIN_PFILE, adm, dbstr, dbsize)
 
                 OCI_StringReleaseOracleString(dbstr);
             }
 
             /* startup DB */
 
-            OCI_CALL2
-            (
-                call_status, con,
-
-                OCIDBStartup(con->cxt, con->err, (OCIAdmin *) adm, OCI_DEFAULT, start_flag)
-            )
+            OCI_EXEC(OCIDBStartup(con->cxt, con->err, (OCIAdmin *) adm, OCI_DEFAULT, start_flag))
 
             /* release security administration handle */
 
@@ -1902,17 +1847,17 @@ boolean OCI_API OCI_DatabaseStartup
         }
     }
 
-    if (call_status)
+    if (OCI_STATUS)
     {
         /* connect without preliminary mode */
 
         con = OCI_ConnectionCreate(db, user, pwd, sess_mode);
 
-        call_status = (NULL != con);
+        OCI_STATUS = (NULL != con);
 
         /* alter database */
 
-        if (call_status)
+        if (OCI_STATUS)
         {
             OCI_Statement *stmt = OCI_StatementCreate(con);
 
@@ -1920,14 +1865,14 @@ boolean OCI_API OCI_DatabaseStartup
 
             if (start_mode & OCI_DB_SPM_MOUNT)
             {
-                call_status = call_status && OCI_ExecuteStmt(stmt, OTEXT("ALTER DATABASE MOUNT"));
+                OCI_STATUS = OCI_STATUS && OCI_ExecuteStmt(stmt, OTEXT("ALTER DATABASE MOUNT"));
             }
 
             /* open database */
 
             if (start_mode & OCI_DB_SPM_OPEN)
             {
-                call_status = call_status && OCI_ExecuteStmt(stmt, OTEXT("ALTER DATABASE OPEN"));
+                OCI_STATUS = OCI_STATUS && OCI_ExecuteStmt(stmt, OTEXT("ALTER DATABASE OPEN"));
             }
 
             OCI_StatementFree(stmt);
@@ -1951,9 +1896,9 @@ boolean OCI_API OCI_DatabaseStartup
 
 #endif
 
-    call_retval = call_status;
+    call_retval = OCI_STATUS;
 
-    OCI_LIB_CALL_EXIT()
+    OCI_CALL_EXIT()
 }
 
 /* --------------------------------------------------------------------------------------------- *
@@ -1972,9 +1917,8 @@ boolean OCI_API OCI_DatabaseShutdown
 {
     OCI_Connection *con = NULL;
 
-    OCI_LIB_CALL_ENTER(boolean, FALSE)
-
-    OCI_CHECK_REMOTE_DBS_CONTROL_ENABLED()
+    OCI_CALL_ENTER(boolean, FALSE)
+    OCI_CALL_CHECK_REMOTE_DBS_CONTROL_ENABLED()
 
 #if OCI_VERSION_COMPILE >= OCI_10_2
 
@@ -1982,9 +1926,9 @@ boolean OCI_API OCI_DatabaseShutdown
 
     con = OCI_ConnectionCreate(db, user, pwd, sess_mode);
 
-    call_status = (NULL != con);
+    OCI_STATUS = (NULL != con);
 
-    if (call_status)
+    if (OCI_STATUS)
     {
         /* delete current transaction before the abort */
 
@@ -2001,17 +1945,12 @@ boolean OCI_API OCI_DatabaseShutdown
         {
             /* start shutdown process */
 
-            OCI_CALL2
-            (
-                call_status, con,
-
-                OCIDBShutdown(con->cxt, con->err, (OCIAdmin *) NULL, shut_flag)
-            )
+            OCI_EXEC(OCIDBShutdown(con->cxt, con->err, (OCIAdmin *) NULL, shut_flag))
         }
 
         /* alter database if we are not in abort mode */
 
-        if (call_status && (OCI_DB_SDF_ABORT != shut_flag))
+        if (OCI_STATUS && (OCI_DB_SDF_ABORT != shut_flag))
         {
             OCI_Statement *stmt = OCI_StatementCreate(con);
 
@@ -2019,14 +1958,14 @@ boolean OCI_API OCI_DatabaseShutdown
 
             if (shut_mode & OCI_DB_SDM_CLOSE)
             {
-                call_status = call_status && OCI_ExecuteStmt(stmt, OTEXT("ALTER DATABASE CLOSE NORMAL"));
+                OCI_STATUS = OCI_STATUS && OCI_ExecuteStmt(stmt, OTEXT("ALTER DATABASE CLOSE NORMAL"));
             }
 
             /* unmount database */
 
             if (shut_mode & OCI_DB_SDM_DISMOUNT)
             {
-                call_status = call_status && OCI_ExecuteStmt(stmt, OTEXT("ALTER DATABASE DISMOUNT"));
+                OCI_STATUS = OCI_STATUS && OCI_ExecuteStmt(stmt, OTEXT("ALTER DATABASE DISMOUNT"));
             }
 
             OCI_StatementFree(stmt);
@@ -2042,12 +1981,7 @@ boolean OCI_API OCI_DatabaseShutdown
 
             /* do the final shutdown if we are not in abort mode */
 
-            OCI_CALL2
-            (
-                call_status, con,
-
-                OCIDBShutdown(con->cxt, con->err, (OCIAdmin *) 0, OCI_DBSHUTDOWN_FINAL)
-            )
+            OCI_EXEC(OCIDBShutdown(con->cxt, con->err, (OCIAdmin *) 0, OCI_DBSHUTDOWN_FINAL))
         }
 
         /* disconnect */
@@ -2067,9 +2001,9 @@ boolean OCI_API OCI_DatabaseShutdown
 
 #endif
 
-    call_retval = call_status;
+    call_retval = OCI_STATUS;
 
-    OCI_LIB_CALL_EXIT()
+    OCI_CALL_EXIT()
 }
 
 /* --------------------------------------------------------------------------------------------- *
@@ -2081,16 +2015,13 @@ boolean OCI_API OCI_SetHAHandler
     POCI_HA_HANDLER  handler
 )
 {
-    void    *callback = NULL;
+    void *callback = NULL;
 
-    OCI_LIB_CALL_ENTER(boolean, FALSE)
-
-    OCI_CHECK_INITIALIZED()
-    OCI_CHECK_HIGH_AVAILABILITY_ENABLED()
+    OCI_CALL_ENTER(boolean, FALSE)
+    OCI_CALL_CHECK_INITIALIZED()
+    OCI_CALL_CHECK_HIGH_AVAILABILITY_ENABLED()
 
 #if OCI_VERSION_COMPILE >= OCI_10_2
-
-    call_status = TRUE;
 
     /* On MSVC, casting a function pointer to a data pointer generates a warning.
        As there is no other to way to do regarding the OCI API, let's disable this
@@ -2105,15 +2036,9 @@ boolean OCI_API OCI_SetHAHandler
         callback = (void*) OCI_ProcHAEvent;
     }
 
-    OCI_CALL3
-    (
-        call_status, OCILib.err,
+    OCI_SET_ATTRIB(OCI_HTYPE_ENV, OCI_ATTR_EVTCBK, OCILib.env, callback, 0)
 
-        OCIAttrSet((dvoid *) OCILib.env, (ub4) OCI_HTYPE_ENV, (dvoid *) callback,
-                   (ub4) 0, (ub4) OCI_ATTR_EVTCBK, OCILib.err)
-    )
-
-    if (call_status)
+    if (OCI_STATUS)
     {
         OCILib.ha_handler = handler;
     }
@@ -2128,9 +2053,9 @@ boolean OCI_API OCI_SetHAHandler
 
 #endif
 
-    call_retval = call_status;
+    call_retval = OCI_STATUS;
 
-    OCI_LIB_CALL_EXIT()
+    OCI_CALL_EXIT()
 }
 
 /* --------------------------------------------------------------------------------------------- *
@@ -2146,10 +2071,9 @@ boolean OCI_API OCI_SetFormat
 {
     otext **value = NULL;
 
-    OCI_LIB_CALL_ENTER(boolean, FALSE)
-
-    OCI_CHECK_INITIALIZED()
-    OCI_CHECK_ENUM_VALUE(con, NULL, type, FormatTypeValues, OTEXT("Format Type"))
+    OCI_CALL_ENTER(boolean, FALSE)
+    OCI_CALL_CHECK_INITIALIZED()
+    OCI_CALL_CHECK_ENUM_VALUE(con, NULL, type, FormatTypeValues, OTEXT("Format Type"))
 
     value = con ? &con->formats[type - 1] : &OCILib.formats[type - 1];
 
@@ -2157,9 +2081,9 @@ boolean OCI_API OCI_SetFormat
 
    *value = ostrdup(format ? format : FormatDefaultValues[type-1]);
 
-    call_retval = call_status = TRUE;
+    call_retval = OCI_STATUS;
 
-    OCI_LIB_CALL_EXIT()
+    OCI_CALL_EXIT()
 }
 
 /* --------------------------------------------------------------------------------------------- *
@@ -2172,13 +2096,11 @@ const otext * OCI_API OCI_GetFormat
     unsigned int    type
 )
 {
-	otext **value = NULL;
+    otext **value = NULL;
 
-    OCI_LIB_CALL_ENTER(const otext *, NULL)
-
-    OCI_CHECK_INITIALIZED()
-
-    OCI_CHECK_ENUM_VALUE(con, NULL, type, FormatTypeValues, OTEXT("Format Type"))
+    OCI_CALL_ENTER(const otext *, NULL)
+    OCI_CALL_CHECK_INITIALIZED()
+    OCI_CALL_CHECK_ENUM_VALUE(con, NULL, type, FormatTypeValues, OTEXT("Format Type"))
 
     value = con ? &con->formats[type-1] : &OCILib.formats[type-1];
 
@@ -2188,7 +2110,6 @@ const otext * OCI_API OCI_GetFormat
     }
 
     call_retval = *value;
-    call_status = TRUE;
 
-    OCI_LIB_CALL_EXIT()
+    OCI_CALL_EXIT()
 }

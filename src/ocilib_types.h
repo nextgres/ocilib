@@ -1,36 +1,22 @@
 /*
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |                               OCILIB - C Driver for Oracle                              |
-    |                                                                                         |
-    |                                (C Wrapper for Oracle OCI)                               |
-    |                                                                                         |
-    |                              Website : http://www.ocilib.net                            |
-    |                                                                                         |
-    |             Copyright (c) 2007-2015 Vincent ROGIER <vince.rogier@ocilib.net>            |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |             This library is free software; you can redistribute it and/or               |
-    |             modify it under the terms of the GNU Lesser General Public                  |
-    |             License as published by the Free Software Foundation; either                |
-    |             version 2 of the License, or (at your option) any later version.            |
-    |                                                                                         |
-    |             This library is distributed in the hope that it will be useful,             |
-    |             but WITHOUT ANY WARRANTY; without even the implied warranty of              |
-    |             MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU           |
-    |             Lesser General Public License for more details.                             |
-    |                                                                                         |
-    |             You should have received a copy of the GNU Lesser General Public            |
-    |             License along with this library; if not, write to the Free                  |
-    |             Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.          |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-*/
-
-/* --------------------------------------------------------------------------------------------- *
- * $Id: ocilib_types.h, Vincent Rogier $
- * --------------------------------------------------------------------------------------------- */
+ * OCILIB - C Driver for Oracle (C Wrapper for Oracle OCI)
+ *
+ * Website: http://www.ocilib.net
+ *
+ * Copyright (c) 2007-2018 Vincent ROGIER <vince.rogier@ocilib.net>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef OCILIB_OCILIB_TYPES_H_INCLUDED
 #define OCILIB_OCILIB_TYPES_H_INCLUDED
@@ -123,7 +109,9 @@ struct OCI_TraceInfo
     otext identifier[OCI_SIZE_TRACE_ID+1];
     otext module[OCI_SIZE_TRACE_MODULE+1];
     otext action[OCI_SIZE_TRACE_ACTION+1];
-    otext info[OCI_SIZE_TRACE_INF0+1];
+    otext info[OCI_SIZE_TRACE_INFO+1];
+    otext operation[OCI_SIZE_TRACE_OPERATION + 1];
+
 };
 
 typedef struct OCI_TraceInfo OCI_TraceInfo;
@@ -144,7 +132,6 @@ struct OCI_Error
     unsigned int    type;                     /* OCILIB error type */
     ub4             row;                      /* Error row offset (array DML) */
     otext           str[OCI_ERR_MSG_SIZE+1];  /* error message */
-    otext           padding[3];               /* dummy variable for alignment */ 
 };
 
 /*
@@ -233,6 +220,7 @@ struct OCI_Library
     big_uint             mem_bytes_oci;           /* allocated bytes by OCI client */
     big_uint             mem_bytes_lib;           /* allocated bytes by OCILIB */
     OCI_Mutex           *mem_mutex;               /* mutex for memory counters */
+    boolean              env_vars[OCI_VARS_COUNT];/* specific environment variables */
 #ifdef OCI_IMPORT_RUNTIME
     LIB_HANDLE           lib_handle;              /* handle of runtime shared library */
 #endif
@@ -325,6 +313,11 @@ struct OCI_Transaction
 
 struct OCI_Column
 {
+    /* OCILIB infos */
+    OCI_TypeInfo *typinf;       /* user type descriptor */
+    ub4    bufsize;             /* element size */
+    ub2    subtype;             /* Ocilib sub type */
+    ub2    struct_subtype;      /* Ocilib numeric sub type for OCI_GetStruct() :( */
     /* Oracle infos */
     ub2    sqlcode;             /* Oracle SQL code */
     ub2    typecode;            /* Oracle type code */
@@ -341,10 +334,7 @@ struct OCI_Column
     ub1    csfrm;               /* charset form */
     ub1    handletype;          /* oracle handle type */
     ub4    props;               /* column properties */
-    /* OCILIB infos */
-    ub4           bufsize;      /* element size */
-    OCI_TypeInfo *typinf;       /* user type descriptor */
-    ub4           subtype;      /* object type */
+    ub4    collation_id;        /* collation id */
 };
 
 /*
@@ -356,14 +346,14 @@ struct OCI_Buffer
 {
     void            *handle;       /* OCI handle (bind or define) */
     void           **data;         /* data / array of data */
-    void            *inds;         /* array of indicators */
     void            *lens;         /* array of lengths */
     ub4              count;        /* number of elements in the buffer */
     int              sizelen;      /* size of an element in the lens array */
-    void           **obj_inds;     /* array of indicators structure object */
-    sb2             *null_inds;    /* null indicators for objects */
     otext           *tmpbuf;       /* temporary buffer */
     unsigned int     tmpsize;      /* temporary buffer size */
+    OCIInd*          inds;         /* indicators */
+    void**           obj_inds;     /* object indicators */
+
 };
 
 typedef struct OCI_Buffer OCI_Buffer;
@@ -391,7 +381,7 @@ struct OCI_Bind
     ub1             alloc;       /* is buffer allocated or mapped to input */
     ub1             csfrm;       /* charset form */
     ub1             direction;   /* in, out or in/out bind */
-    char            padding[3];  /* dummy variable for alignment */ 
+    ub1             alloc_mode;  /* allocation mode : internal or external */
 }
 ;
 
@@ -461,8 +451,10 @@ struct OCI_Statement
     OCI_Bind       **ubinds;            /* array of user bind objects */
     OCI_Bind       **rbinds;            /* array of register bind objects */
     OCI_HashTable   *map;               /* hash table handle for mapping bind name/index */
-    ub2              nb_ubinds;         /* number of elements in the bind array */
-    ub2              nb_rbinds;         /* number of output binds */
+    ub2              nb_ubinds;         /* number of used user binds */
+    ub2              nb_rbinds;         /* number of used register binds */
+    ub2              allocated_ubinds;  /* number of allocated user binds */
+    ub2              allocated_rbinds;  /* number of allocated register binds */
     boolean          bind_reuse;        /* rebind data allowed ? */
     unsigned int     bind_mode;         /* type of binding */
     unsigned int     bind_alloc_mode;   /* type of bind allocation */
@@ -483,7 +475,6 @@ struct OCI_Statement
     boolean          bind_array;        /* has array binds ? */
     OCI_BatchErrors *batch;             /* error handling for array DML */
     ub2              err_pos;           /* error position in sql statement */
-    char             padding[2];        /* dummy variable for alignment */ 
 };
 
 /*
@@ -532,6 +523,20 @@ struct OCI_Long
     ub4            piecesize;   /* size of current fetched piece */
     ub4            maxsize;     /* size to R/W */
     ub1           *buffer;      /* fetched buffer */
+};
+
+/*
+* Number object
+*
+*/
+
+struct OCI_Number
+{
+    OCINumber      *handle;     /* OCI handle */
+    ub4             hstate;     /* object variable state */
+    OCI_Connection *con;        /* pointer to connection object */
+    OCIError       *err;        /* OCI error handle */
+    OCIEnv         *env;        /* OCI environment handle */
 };
 
 /*
@@ -602,9 +607,8 @@ struct OCI_Object
     OCIObjectLifetime type;         /* object type */
     sb2              *tab_ind;      /* indicators for root instance */
     ub2               idx_ind;      /* instance indicator offset / indicator table */
-    otext            *tmpbuf;       /* temporary buffer */
-    unsigned int      tmpsize;      /* temporary buffer size */
-    char              padding[2];   /* dummy variable for alignment */ 
+    otext           **tmpbufs;      /* temporary buffer  per column */
+    unsigned int     *tmpsizes;     /* temporary buffer size per column */
 };
 
 /*
@@ -691,6 +695,8 @@ struct OCI_TypeInfo
     int            *offsets;     /* cached offsets */
     size_t          struct_size; /* cached structure size */
     size_t          align;       /* cached structure alignment */
+    OCI_TypeInfo   *parent_type; /* parent super type for derived type */
+    ub1             is_final;    /* is is a virtual type that can be inherited ? */
 };
 
 /*
@@ -710,7 +716,6 @@ struct OCI_DirPathColumn
     ub1   *data;                  /* array of data */
     ub1   *flags;                 /* array of row flags */
     ub2    maxsize;               /* input max size */
-    char   padding[2];            /* dummy variable for alignment */ 
 };
 
 typedef struct OCI_DirPathColumn OCI_DirPathColumn;
@@ -744,7 +749,6 @@ struct OCI_DirPath
     unsigned int        res_load;       /* status of the last load */
     ub4                *err_rows;       /* array of err rows index */
     ub2                *err_cols;       /* array of err col index */
-    char                padding[2];     /* dummy variable for alignment */ 
 };
 
 /*
@@ -818,7 +822,6 @@ struct OCI_Msg
     OCI_Agent          *sender;        /* sender */
     OCI_Object         *obj;           /* OCILIB object handle for object payloads */
     OCIInd              ind;           /* message payload indicator pointer */
-    char                padding[2];    /* dummy variable for alignment */ 
 };
 
 /*
@@ -860,7 +863,9 @@ struct OCI_Dequeue
 
 struct OCI_Array
 {
-    OCI_Connection *con;            /* pointer to connection info object */
+    OCIError       *err;            /* OCI context handle */
+    OCIEnv         *env;            /* OCI environment handle */
+    OCI_Connection *con;            /* Connection object for type dependent on connections */
     unsigned int    elem_type;      /* array element type */
     unsigned int    elem_subtype;   /* array element subtype */
     unsigned int    elem_size;      /* array element handle size */
@@ -909,16 +914,63 @@ typedef struct OCI_Datatype OCI_Datatype;
 
 struct OCI_SQLCmdInfo
 {
-    unsigned int code; /* SQL command code */
-    otext       *verb; /* SQL command verb */
+    unsigned int  code; /* SQL command code */
+    const otext  *verb; /* SQL command verb */
 };
 
 typedef struct OCI_SQLCmdInfo OCI_SQLCmdInfo;
 
+/* OCI context */
+
+struct OCI_Context
+{
+    OCI_Connection *lib_con;
+    OCI_Statement  *lib_stmt;
+    OCIError       *oci_err;
+    OCI_Error      *call_err;
+    boolean         call_status;
+};
+
+typedef struct OCI_Context OCI_Context;
+
 /* static and unique OCI_Library object */
 
 extern OCI_Library OCILib;
-extern OCI_SQLCmdInfo SQLCmds[];
+extern const OCI_SQLCmdInfo SQLCmds[];
+
+/* Start of Experimental section containing some Oracle opaque structure definitions 
+
+   These partial structures are "guessed" from memory analysis in order to 
+   find workarounds to bugs that Oracle does not / refuses to fix.
+
+   These structures are not used in OCILIB unless specific environment variables are set
+*/
+
+
+/* The following structures contain definitions for a structure matching an Oracle Parameter  
+   retrieved from a statement handle when describing columns from resultsets.
+   They were added in order to implement a workaround for the unfixed Oracle Bug 9838993 
+*/
+
+struct OCIParamStructColumnInfo
+{
+    unsigned char unknown_fields[6 * sizeof(int) + 2 * sizeof(void*)];
+    unsigned char attributes[sizeof(void *)];
+    char *name;
+};
+
+typedef struct OCIParamStructColumnInfo OCIParamStructColumnInfo;
+
+struct OCIParamStruct
+{
+    unsigned char unknown_fields[3 * sizeof(void*)];
+
+    OCIParamStructColumnInfo *column_info;
+};
+
+typedef struct OCIParamStruct OCIParamStruct;
+
+/* End of Experimental section */
 
 #endif /* OCILIB_OCILIB_TYPES_H_INCLUDED */
 

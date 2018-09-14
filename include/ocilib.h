@@ -1,53 +1,35 @@
 /*
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |                               OCILIB - C Driver for Oracle                              |
-    |                                                                                         |
-    |                                (C Wrapper for Oracle OCI)                               |
-    |                                                                                         |
-    |                              Website : http://www.ocilib.net                            |
-    |                                                                                         |
-    |             Copyright (c) 2007-2015 Vincent ROGIER <vince.rogier@ocilib.net>            |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |             This library is free software; you can redistribute it and/or               |
-    |             modify it under the terms of the GNU Lesser General Public                  |
-    |             License as published by the Free Software Foundation; either                |
-    |             version 2 of the License, or (at your option) any later version.            |
-    |                                                                                         |
-    |             This library is distributed in the hope that it will be useful,             |
-    |             but WITHOUT ANY WARRANTY; without even the implied warranty of              |
-    |             MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU           |
-    |             Lesser General Public License for more details.                             |
-    |                                                                                         |
-    |             You should have received a copy of the GNU Lesser General Public            |
-    |             License along with this library; if not, write to the Free                  |
-    |             Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.          |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-
-    +-----------------------------------------------------------------------------------------+
-    |                                     IMPORTANT NOTICE                                    |
-    +-----------------------------------------------------------------------------------------+
-    |                                                                                         |
-    |             This file contains explanations about Oracle and OCI  technologies.         |
-    |             OCILIB is a wrapper around OCI and thus exposes OCI features.               |
-    |             The OCILIB documentation intends to explain Oracle / OCI concepts           |
-    |             and is naturally based on the official Oracle OCI documentation.            |
-    |                                                                                         |
-    |             Some parts of OCILIB documentation may include some informations            |
-    |             taken and adapted from the following Oracle documentations :                |
-    |                 - Oracle Call Interface Programmer's Guide                              |
-    |                 - Oracle Streams - Advanced Queuing User's Guide                        |
-    |                                                                                         |
-    +-----------------------------------------------------------------------------------------+
-
+ * OCILIB - C Driver for Oracle (C Wrapper for Oracle OCI)
+ *
+ * Website: http://www.ocilib.net
+ *
+ * Copyright (c) 2007-2018 Vincent ROGIER <vince.rogier@ocilib.net>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
-/* --------------------------------------------------------------------------------------------- *
- * $Id: ocilib.h, Vincent Rogier $
- * --------------------------------------------------------------------------------------------- */
+/* IMPORTANT NOTICE
+ *
+ * This file contains explanations about Oracle and OCI technologies. 
+ * OCILIB is a wrapper around OCI and thus exposes OCI features. 
+ * The OCILIB documentation intends to explain Oracle / OCI concepts
+ * and is naturally based on the official Oracle OCI documentation. 
+ * 
+ * Some parts of OCILIB documentation may include some informations 
+ * taken and adapted from the following Oracle documentations :
+ *  - Oracle Call Interface Programmer's Guide
+ *  - Oracle Streams - Advanced Queuing User's Guide
+ */
 
 #ifndef OCILIB_H_INCLUDED
 #define OCILIB_H_INCLUDED
@@ -79,9 +61,9 @@ extern "C" {
 #include <stdio.h>
 #include <stdarg.h>
 #include <ctype.h>
+#include <wctype.h>
 #include <string.h>
 #include <time.h>
-#include <errno.h>
 #include <limits.h>
 
 /* --------------------------------------------------------------------------------------------- *
@@ -109,8 +91,8 @@ extern "C" {
  * --------------------------------------------------------------------------------------------- */
 
 #define OCILIB_MAJOR_VERSION     4
-#define OCILIB_MINOR_VERSION     2
-#define OCILIB_REVISION_VERSION  0
+#define OCILIB_MINOR_VERSION     5
+#define OCILIB_REVISION_VERSION  2
 
 /* Import mode */
 
@@ -257,8 +239,6 @@ extern "C" {
  * - ostol
  *
 **/
-
-#include <wctype.h>
 
 #if defined(__cplusplus) && defined(_MSC_VER) && (_MSC_VER < 1300)
 extern "C++" {
@@ -577,6 +557,15 @@ typedef struct OCI_Transaction OCI_Transaction;
  */
 
 typedef struct OCI_Long OCI_Long;
+
+/**
+* @typedef OCI_Number
+*
+* @brief
+* Oracle NUMBER representation.
+*
+*/
+typedef struct OCI_Number OCI_Number;
 
 /**
  * @typedef OCI_Date
@@ -961,7 +950,7 @@ typedef struct OCI_XID {
 } OCI_XID;
 
 /**
- * @union OCI_Variant
+ * @typedef OCI_Variant
  *
  * @brief
  * Internal Variant type based on union C type.
@@ -1091,12 +1080,13 @@ typedef unsigned int big_uint;
 #define OCI_11_1                            1110
 #define OCI_11_2                            1120
 #define OCI_12_1                            1210
+#define OCI_12_2                            1220
 
 /* versions extract macros */
 
-#define OCI_VER_MAJ(v)                      (unsigned int) (v/100)
-#define OCI_VER_MIN(v)                      (unsigned int) ((v/10) - ((v/100)*10))
-#define OCI_VER_REV(v)                      (unsigned int) ((v) - ((v/10)*10))
+#define OCI_VER_MAJ(v)                      (unsigned int) ((v)/100)
+#define OCI_VER_MIN(v)                      (unsigned int) (((v)/10) - (((v)/100)*10))
+#define OCI_VER_REV(v)                      (unsigned int) ((v) - (((v)/10)*10))
 
 /* OCILIB Error types */
 
@@ -1134,21 +1124,25 @@ typedef unsigned int big_uint;
 #define OCI_ERR_TYPEINFO_DATATYPE           25
 #define OCI_ERR_ITEM_NOT_FOUND              26
 #define OCI_ERR_ARG_INVALID_VALUE           27
+#define OCI_ERR_XA_ENV_FROM_STRING          28
+#define OCI_ERR_XA_CONN_FROM_STRING         29
+#define OCI_ERR_BIND_EXTERNAL_NOT_ALLOWED   30
 
-#define OCI_ERR_COUNT                       28
+#define OCI_ERR_COUNT                       31   
+
 
 /* allocated bytes types */
 
 #define OCI_MEM_ORACLE                      1
 #define OCI_MEM_OCILIB                      2
-#define OCI_MEM_ALL                         OCI_MEM_ORACLE | OCI_MEM_OCILIB
+#define OCI_MEM_ALL                         (OCI_MEM_ORACLE | OCI_MEM_OCILIB)
 
 /* binding */
 
 #define OCI_BIND_BY_POS                     0
 #define OCI_BIND_BY_NAME                    1
 #define OCI_BIND_SIZE                       6
-#define OCI_BIND_MAX                        1024
+#define OCI_BIND_MAX                        65535
 
 /* fetching */
 
@@ -1198,6 +1192,7 @@ typedef unsigned int big_uint;
 #define OCI_ARG_COLLECTION                  16
 #define OCI_ARG_REF                         17
 #define OCI_ARG_FLOAT                       18
+#define OCI_ARG_NUMBER                      19
 
 /* statement types */
 
@@ -1211,6 +1206,7 @@ typedef unsigned int big_uint;
 #define OCI_CST_BEGIN                       8
 #define OCI_CST_DECLARE                     9
 #define OCI_CST_CALL                        10
+#define OCI_CST_MERGE                       16
 
 /* environment modes */
 
@@ -1221,18 +1217,24 @@ typedef unsigned int big_uint;
 
 /* sessions modes */
 
-#define OCI_SESSION_DEFAULT                 0
-#define OCI_SESSION_XA                      1
-#define OCI_SESSION_SYSDBA                  2
-#define OCI_SESSION_SYSOPER                 4
-#define OCI_SESSION_PRELIM_AUTH             8
+#define OCI_SESSION_DEFAULT                 0x00000000  /* any version */
+#define OCI_SESSION_SYSDBA                  0x00000002  /* any version */
+#define OCI_SESSION_SYSOPER                 0x00000004  /* any version */
+#define OCI_SESSION_SYSASM                  0x00008000  /* From 11gR1  */
+#define OCI_SESSION_SYSBKP                  0x00020000  /* From 12cR1  */
+#define OCI_SESSION_SYSDGD                  0x00040000  /* From 12cR1  */
+#define OCI_SESSION_SYSKMT                  0x00080000  /* From 12cR1  */
+#define OCI_SESSION_SYSRAC                  0x00100000  /* From 12cR2  */
+
+#define OCI_SESSION_XA                      0x00000001
+#define OCI_SESSION_PRELIM_AUTH             0x00000008
 
 /* change notification types */
 
 #define OCI_CNT_OBJECTS                     1
 #define OCI_CNT_ROWS                        2
 #define OCI_CNT_DATABASES                   4
-#define OCI_CNT_ALL                         OCI_CNT_OBJECTS | OCI_CNT_ROWS | OCI_CNT_DATABASES
+#define OCI_CNT_ALL                         (OCI_CNT_OBJECTS | OCI_CNT_ROWS | OCI_CNT_DATABASES)
 
 /* event notification types */
 
@@ -1257,7 +1259,7 @@ typedef unsigned int big_uint;
 #define OCI_DB_SPM_START                    1
 #define OCI_DB_SPM_MOUNT                    2
 #define OCI_DB_SPM_OPEN                     4
-#define OCI_DB_SPM_FULL                     OCI_DB_SPM_START | OCI_DB_SPM_MOUNT | OCI_DB_SPM_OPEN
+#define OCI_DB_SPM_FULL                     (OCI_DB_SPM_START | OCI_DB_SPM_MOUNT | OCI_DB_SPM_OPEN)
 
 /* database startup flags */
 
@@ -1270,7 +1272,7 @@ typedef unsigned int big_uint;
 #define OCI_DB_SDM_SHUTDOWN                 1
 #define OCI_DB_SDM_CLOSE                    2
 #define OCI_DB_SDM_DISMOUNT                 4
-#define OCI_DB_SDM_FULL                     OCI_DB_SDM_SHUTDOWN | OCI_DB_SDM_CLOSE | OCI_DB_SDM_DISMOUNT
+#define OCI_DB_SDM_FULL                     (OCI_DB_SDM_SHUTDOWN | OCI_DB_SDM_CLOSE | OCI_DB_SDM_DISMOUNT)
 
 /* database shutdown flags */
 
@@ -1314,6 +1316,23 @@ typedef unsigned int big_uint;
 #define OCI_CPF_IS_GEN_ALWAYS               2
 #define OCI_CPF_IS_GEN_BY_DEFAULT_ON_NULL   4
 
+/* Column collation IDs     */
+
+#define OCI_CCI_NONE                        0x00000000
+#define OCI_CCI_NLS_COMP                    0x00003FFE
+#define OCI_CCI_NLS_SORT                    0x00003FFD
+#define OCI_CCI_NLS_SORT_CI                 0x00003FFC
+#define OCI_CCI_NLS_SORT_AI                 0x00003FFB
+#define OCI_CCI_NLS_SORT_CS                 0x00003FFA
+#define OCI_CCI_NLS_SORT_VAR1               0x00003FF9
+#define OCI_CCI_NLS_SORT_VAR1_CI            0x00003FF8
+#define OCI_CCI_NLS_SORT_VAR1_AI            0x00003FF7
+#define OCI_CCI_NLS_SORT_VAR1_CS            0x00003FF6
+#define OCI_CCI_BINARY                      0x00003FFF
+#define OCI_CCI_BINARY_CI                   0x00023FFF
+#define OCI_CCI_BINARY_AI                   0x00013FFF
+
+
 /* Integer sign flag */
 
 #define OCI_NUM_UNSIGNED                    2
@@ -1325,6 +1344,7 @@ typedef unsigned int big_uint;
 #define OCI_NUM_BIGINT                      16
 #define OCI_NUM_FLOAT                       32
 #define OCI_NUM_DOUBLE                      64
+#define OCI_NUM_NUMBER                      128
 
 #define OCI_NUM_USHORT                      (OCI_NUM_SHORT  | OCI_NUM_UNSIGNED)
 #define OCI_NUM_UINT                        (OCI_NUM_INT    | OCI_NUM_UNSIGNED)
@@ -1457,6 +1477,7 @@ typedef unsigned int big_uint;
 #define OCI_SIZE_TRACE_MODULE               48
 #define OCI_SIZE_TRACE_ACTION               32
 #define OCI_SIZE_TRACE_INFO                 64
+#define OCI_SIZE_TRACE_OPERATION            32
 
 /* trace types */
 
@@ -1464,6 +1485,7 @@ typedef unsigned int big_uint;
 #define OCI_TRC_MODULE                      2
 #define OCI_TRC_ACTION                      3
 #define OCI_TRC_DETAIL                      4
+#define OCI_TRC_OPERATION                   5
 
 /* HA event type */
 
@@ -1520,6 +1542,7 @@ typedef unsigned int big_uint;
 #define OCI_FMT_NUMERIC                     3
 #define OCI_FMT_BINARY_DOUBLE               4
 #define OCI_FMT_BINARY_FLOAT                5
+#define OCI_FMT_TIMESTAMP_TZ                6
 
 /* sql function codes */
 
@@ -1654,7 +1677,7 @@ typedef unsigned int big_uint;
 
 #define OCI_SIZE_FORMAT                     64
 #define OCI_SIZE_BUFFER                     512
-#define OCI_SIZE_LONG                       (64*1024)-1
+#define OCI_SIZE_LONG                       ((64*1024)-1)
 #define OCI_SIZE_DATE                       45
 #define OCI_SIZE_TIMESTAMP                  54
 #define OCI_SIZE_FORMAT_TODATE              14
@@ -1665,7 +1688,7 @@ typedef unsigned int big_uint;
 #define OCI_SIZE_FILENAME                   255
 #define OCI_SIZE_FORMAT_NUMS                40
 #define OCI_SIZE_FORMAT_NUML                65
-#define OCI_SIZE_OBJ_NAME                   32
+#define OCI_SIZE_OBJ_NAME                   128
 
 #define OCI_HASH_DEFAULT_SIZE               256
 
@@ -1677,7 +1700,8 @@ typedef unsigned int big_uint;
 #define OCI_STRING_FORMAT_DATE              OTEXT("YYYY-MM-DD")
 #define OCI_STRING_FORMAT_TIME              OTEXT("HH24:MI:SS")
 #define OCI_STRING_FORMAT_DATETIME          OTEXT("YYYY-MM-DD HH24:MI:SS")
-#define OCI_STRING_FORMAT_TIMESTAMP         OTEXT("YYYY-MM-DD HH24:MI:SS:FF3")
+#define OCI_STRING_FORMAT_TIMESTAMP         OTEXT("YYYY-MM-DD HH24:MI:SS.FF")
+#define OCI_STRING_FORMAT_TIMESTAMP_TZ      OTEXT("YYYY-MM-DD HH24:MI:SS.FF TZR")
 #define OCI_STRING_DEFAULT_PREC             3
 #define OCI_STRING_FORMAT_NUM   \
     OTEXT("FM99999999999999999999999999999999999990.999999999999999999999999")
@@ -1718,10 +1742,6 @@ typedef unsigned int big_uint;
  * @warning
  *
  * All other standalone object instances (mutexes, threads, dates, lobs, ...) <b>ARE NOT</b> freed.
- *
- * @par Example
- *
- * @include init.c
  *
  */
 
@@ -2474,7 +2494,8 @@ OCI_EXPORT unsigned int OCI_API OCI_GetServerRevisionVersion
  * Possible values of parameter 'type' :
  *
  * - OCI_FMT_DATE          : format used to convert DATE to string
- * - OCI_FMT_TIMESTAMP     : format used to convert TIMESTAMP to string
+ * - OCI_FMT_TIMESTAMP     : format used to convert TIMESTAMP and TIMESTAMP WITH LOCAL TIMEZONE to string
+ * - OCI_FMT_TIMESTAMP_TZ  : format used to convert TIMESTAMP WITH TIME ZONE to string
  * - OCI_FMT_NUMERIC       : format used to convert numeric types to string
  * - OCI_FMT_BINARY_DOUBLE : format used to convert BINARY_DOUBLE to string
  * - OCI_FMT_BINARY FLOAT  : format used to convert BINARY_FLOAT to string
@@ -2483,6 +2504,7 @@ OCI_EXPORT unsigned int OCI_API OCI_GetServerRevisionVersion
  * Default format values are :
  * - OCI_FMT_DATE          : constant OCI_STRING_FORMAT_DATE
  * - OCI_FMT_TIMESTAMP     : constant OCI_STRING_FORMAT_TIMESTAMP
+ * - OCI_FMT_TIMESTAMP_TZ  : constant OCI_STRING_FORMAT_TIMESTAMP_TZ
  * - OCI_FMT_NUMERIC       : constant OCI_STRING_FORMAT_NUMERIC
  * - OCI_FMT_BINARY_DOUBLE : constant OCI_STRING_FORMAT_BINARY_DOUBLE
  * - OCI_FMT_BINARY FLOAT  : constant OCI_STRING_FORMAT_BINARY_FLOAT
@@ -2598,7 +2620,7 @@ OCI_EXPORT unsigned int OCI_API OCI_GetVersionConnection
  * Store current trace information to the given connection handle.
  * These information:
  *
- * - is stored in the system view V$SESSION
+ * - is stored in system view V$SESSION and/or V$SQL_MONITOR
  * - can be retrieved from the connection property of an OCI_Error handle
  *
  * @note
@@ -2616,19 +2638,24 @@ OCI_EXPORT unsigned int OCI_API OCI_GetVersionConnection
  * - OCI_TRC_DETAIL   : Client application additional information.
  *                      It's recorded in the column CLIENT_INFO of the
  *                      system view V$SESSION
+ * - OCI_TRC_OPERATION: Client application database operation.
+ *                      It's recorded in the column DBOP_NAME of the
+ *                      system view V$SQL_MONITOR
+ * @warning
+ * The system view V$SESSION is updated on Oracle versions >= 10gR1
+ * The system view V$SQL_MONITOR is updated on Oracle versions >= 12cR1
  *
  * @warning
- * The system view V$SESSION is updated on Oracle versions >= 10g
- *
- * @warning
- * Oracle limits the size of these traces content and thus OCILIB will truncate
- * the given values if needed :
+ * Oracle limits the size of these traces content: 
  *
  * - OCI_TRC_IDENTITY : 64 bytes
  * - OCI_TRC_MODULE   : 48 bytes
  * - OCI_TRC_ACTION   : 32 bytes
  * - OCI_TRC_DETAIL   : 64 bytes
+ * - OCI_TRC_OPERATION: 32 bytes
  *
+ * OCILIB truncates input values to match theses limits
+ * 
  */
 
 OCI_EXPORT boolean OCI_API OCI_SetTrace
@@ -3817,6 +3844,12 @@ OCI_EXPORT unsigned int OCI_API OCI_GetSqlErrorPos
  * @note
  * For SELECTs  statements, use OCI_GetRowCount() instead
  *
+ * @note
+ * For PL/SQL blocks performing "select into :<bind>":
+ *  - it returns the number of rows selected from PL/SQL
+ *  - Up to version 4.3.0, OCI_Execute() returned FALSE and generated an error ORA-01403 - "No Data Found"
+ *  - From version 4.3.1, OCI_Execute() returns 0 if no data found, otherwise the number of selected rows
+ *
  */
 
 OCI_EXPORT unsigned int OCI_API OCI_GetAffectedRows
@@ -3885,7 +3918,7 @@ OCI_EXPORT const otext * OCI_API OCI_GetSQLVerb
  * - Basic data types: string (char/wchar_t *), int, float, double, raw
  * - Object data types: lobs, files,longs, dates, cursors, statements,
  *                      timestamps, intervals, objects
- *
+ *  
  * To use binding:
  *
  * - Prepare a statement with OCI_Prepare() (see Executing statements)
@@ -3896,6 +3929,17 @@ OCI_EXPORT const otext * OCI_API OCI_GetSQLVerb
  * - Each OCI_Execute() call may be preceded by an update of the program
  *   variables (for INSERTs for example)
  *
+ * Bindings can be:
+ *  - IN (host variable are not used anymore after statement execution)
+ *  - OUT (host variable are set during statement execution)
+ *  - IN/OUT (default)
+ * Use OCI_BindSetDirectionTo() to change a host variable bind direction mode after the binding call but before statement execution. 
+ * Note that each direction mode may have a little overhead depending on the SQL type as OCILIB may have to do checks/conversions/mappings between host variable and buffers.
+ * Thus, to maximize performances:
+ *  - set direction mode to OCI_BDM_IN  if host variable is not updated by statement execution
+ *  - set direction mode to OCI_BDM_OUT if host variable value does not matter prior to statement execution
+ *  - set direction mode to OCI_BDM_IN_OUT when host variable value is used for execution and updated by statement execution
+ *  
  * OCILIB supports the OCI array Interface by binding arrays of C scalar types
  * and OCILIB object types.
  *
@@ -4090,6 +4134,58 @@ OCI_EXPORT boolean OCI_API OCI_BindBoolean
     OCI_Statement *stmt,
     const otext   *name,
     boolean       *data
+);
+
+/**
+* @brief
+* Bind an Number variable
+*
+* @param stmt - Statement handle
+* @param name - Variable name
+* @param data - Pointer to short variable
+*
+* @note
+* parameter 'data' can NULL if the statement bind allocation mode
+* has been set to OCI_BAM_INTERNAL
+*
+* @return
+* TRUE on success otherwise FALSE
+*/
+
+OCI_EXPORT boolean OCI_API OCI_BindNumber
+(
+    OCI_Statement *stmt,
+    const otext   *name,
+    OCI_Number    *data
+);
+
+/**
+* @brief
+* Bind an array of Number
+*
+* @param stmt   - Statement handle
+* @param name   - Variable name
+* @param data   - Array of numbers
+* @param nbelem - Number of element in the array (PL/SQL table only)
+*
+* @warning
+* Parameter 'nbelem' SHOULD ONLY be USED for PL/SQL tables.
+* For regular DML array operations, pass the value 0.
+*
+* @note
+* parameter 'data' can NULL if the statement bind allocation mode
+* has been set to OCI_BAM_INTERNAL
+*
+* @return
+* TRUE on success otherwise FALSE
+*/
+
+OCI_EXPORT boolean OCI_API OCI_BindArrayOfNumbers
+(
+    OCI_Statement *stmt,
+    const otext   *name,
+    OCI_Number   **data,
+    unsigned int   nbelem
 );
 
 /**
@@ -4699,7 +4795,7 @@ OCI_EXPORT boolean OCI_API OCI_BindArrayOfDates
  * @param data - Timestamp handle
  *
  * @note
- * parameter 'data' CANNOT be NULL whatever the statement bind allocation mode
+ * parameter 'data' CANNOT be NULL resulting OCI_BAM_INTERNAL bind allocation mode being NOT supported
  *
  * @return
  * TRUE on success otherwise FALSE
@@ -4755,7 +4851,7 @@ OCI_EXPORT boolean OCI_API OCI_BindArrayOfTimestamps
  * @param data - Interval handle
  *
  * @note
- * parameter 'data' CANNOT be NULL whatever the statement bind allocation mode
+ * parameter 'data' CANNOT be NULL resulting OCI_BAM_INTERNAL bind allocation mode being NOT supported
  *
  * @return
  * TRUE on success otherwise FALSE
@@ -4813,7 +4909,7 @@ OCI_EXPORT boolean OCI_API OCI_BindArrayOfIntervals
  * @param data - Lob handle
  *
  * @note
- * parameter 'data' CANNOT be NULL whatever the statement bind allocation mode
+ * parameter 'data' CANNOT be NULL resulting OCI_BAM_INTERNAL bind allocation mode being NOT supported
  *
  * @return
  * TRUE on success otherwise FALSE
@@ -4869,7 +4965,7 @@ OCI_EXPORT boolean OCI_API OCI_BindArrayOfLobs
  * @param data - File handle
  *
  * @note
- * parameter 'data' CANNOT be NULL whatever the statement bind allocation mode
+ * parameter 'data' CANNOT be NULL resulting OCI_BAM_INTERNAL bind allocation mode being NOT supported
  *
  * @return
  * TRUE on success otherwise FALSE
@@ -4925,7 +5021,7 @@ OCI_EXPORT boolean OCI_API OCI_BindArrayOfFiles
  * @param data - Object handle
  *
  * @note
- * parameter 'data' CANNOT be NULL whatever the statement bind allocation mode
+ * parameter 'data' CANNOT be NULL resulting OCI_BAM_INTERNAL bind allocation mode being NOT supported
  *
  * @return
  * TRUE on success otherwise FALSE
@@ -4980,7 +5076,7 @@ OCI_EXPORT boolean OCI_API OCI_BindArrayOfObjects
  * @param data - Collection handle to bind
  *
  * @note
- * parameter 'data' CANNOT be NULL whatever the statement bind allocation mode
+ * parameter 'data' CANNOT be NULL resulting OCI_BAM_INTERNAL bind allocation mode being NOT supported
  *
  * @return
  * TRUE on success otherwise FALSE
@@ -5037,7 +5133,7 @@ OCI_EXPORT boolean OCI_API OCI_BindArrayOfColls
  * @param data - Ref handle to bind
  *
  * @note
- * parameter 'data' CANNOT be NULL whatever the statement bind allocation mode
+ * parameter 'data' CANNOT be NULL resulting OCI_BAM_INTERNAL bind allocation mode being NOT supported
  *
  * @return
  * TRUE on success otherwise FALSE
@@ -5091,7 +5187,7 @@ OCI_EXPORT boolean OCI_API OCI_BindArrayOfRefs
  * @param data - Statement handle to bind
  *
  * @note
- * parameter 'data' CANNOT be NULL whatever the statement bind allocation mode
+ * parameter 'data' CANNOT be NULL resulting OCI_BAM_INTERNAL bind allocation mode being NOT supported
  *
  * @return
  * TRUE on success otherwise FALSE
@@ -5362,6 +5458,7 @@ OCI_EXPORT unsigned int OCI_API OCI_BindGetType
  * - OCI_NUM_BIGUINT
  * - OCI_NUM_DOUBLE
  * - OCI_NUM_FLOAT
+ * - OCI_NUM_NUMBER
  *
  * For OCI_Long type the possible values are:
  * - OCI_BLONG
@@ -5726,6 +5823,26 @@ boolean OCI_API OCI_BindSetCharsetForm
 );
 
 /**
+ * @brief
+ * Get the allocaton mode of a bind handle
+ *
+ * @param bnd - Bind handle
+ *
+ * @note
+ * Possible values are :
+ *  - OCI_BAM_EXTERNAL : bind variable is allocated by user code
+ *  - OCI_BAM_INTERNAL : bind variable is allocated internally
+ *
+ * return the allocaton mode on success otherwise OCI_UNKNWON
+ *
+ */
+
+OCI_EXPORT unsigned int OCI_API OCI_BindGetAllocationMode
+(
+    OCI_Bind *bnd
+);
+
+/**
  * @}
  */
 
@@ -5738,7 +5855,7 @@ boolean OCI_API OCI_BindSetCharsetForm
  *
  * ONLY the following statements can return resultsets that can be fetched by host programs:
  * - Statements executing SQL SELECT
- * - Statements executing SQL UPDATE/DELETE using a RETURNING INTO clause
+ * - Statements executing SQL INSERT/UPDATE/DELETE using a RETURNING INTO clause
  * - Statements binded to PL/SQL OPEN FOR argument
  * - Statements binded to PL/SQL procedure OUT variables
  * - Statements implicitly returned from PL/SQL procedure or blocks (new feature in Oracle 12cR1) using
@@ -5779,7 +5896,7 @@ boolean OCI_API OCI_BindSetCharsetForm
  * Oracle 9i introduced scrollable cursors (resultsets in OCILIB) that can be
  * fetched:
  *
- * - Sequentially in both directions: OCI_FetchPrev() and OCI_FetchPrev()
+ * - Sequentially in both directions: OCI_FetchPrev() and OCI_FetchNext()
  * - To a relative position in the resultset: OCI_FetchSeek() with OCI_SFD_RELATIVE
  * - To an absolute position in the resultset: OCI_FetchSeek() with OCI_SFD_ABOSLUTE
  * - To the first or last row in the resultset: OCI_FetchFirst() and OCI_FetchLast()
@@ -6397,6 +6514,38 @@ OCI_EXPORT unsigned int OCI_API OCI_ColumnGetPropertyFlags
 );
 
 /**
+* @brief
+* Return the column collation ID
+*
+* @param col - Column handle
+*
+* Possible values:
+*  - OCI_CCI_NONE  
+*  - OCI_CCI_NLS_COMP 
+*  - OCI_CCI_NLS_SORT
+*  - OCI_CCI_NLS_SORT_CI
+*  - OCI_CCI_NLS_SORT_AI
+*  - OCI_CCI_NLS_SORT_CS
+*  - OCI_CCI_NLS_SORT_VAR1 
+*  - OCI_CCI_NLS_SORT_VAR1_CI
+*  - OCI_CCI_NLS_SORT_VAR1_AI
+*  - OCI_CCI_NLS_SORT_VAR1_CS
+*  - OCI_CCI_BINARY
+*  - OCI_CCI_BINARY_CI
+*  - OCI_CCI_BINARY_AI
+*
+* @note
+* This was introduced in Oracle 12cR2.
+* For earlier versions, it always return OCI_CCI_NONE
+*
+*/
+
+OCI_EXPORT unsigned int OCI_API OCI_ColumnGetCollationID
+(
+    OCI_Column *col
+);
+
+/**
  * @brief
  * Return the type information object associated to the column
  *
@@ -6427,6 +6576,7 @@ OCI_EXPORT OCI_TypeInfo * OCI_API OCI_ColumnGetTypeInfo
  * - OCI_CDT_FILE
  * - OCI_CDT_TIMESTAMP
  * - OCI_CDT_INTERVAL
+ * - OCI_CDT_NUMERIC
  *
  * For OCI_Long type the possible values are:
  * - OCI_BLONG
@@ -6449,6 +6599,26 @@ OCI_EXPORT OCI_TypeInfo * OCI_API OCI_ColumnGetTypeInfo
  * For OCI_Interval type the possible values are:
  * - OCI_INTERVAL_YM
  * - OCI_INTERVAL_DS
+ *
+ * For numeric columns the possible values are:
+ * - OCI_NUM_SHORT
+ * - OCI_NUM_INT
+ * - OCI_NUM_BIGINT
+ * - OCI_NUM_USHORT
+ * - OCI_NUM_UINT
+ * - OCI_NUM_BIGUINT
+ * - OCI_NUM_DOUBLE
+ * - OCI_NUM_FLOAT
+ * - OCI_NUM_NUMBER
+ *
+ * @warning
+ * For numeric columns, the value may be not accurate at all!
+ * OCI does not allow to find out the real SQL precise type of an numeric column (int, real, ...). 
+ * OCI based libraries can only 'guess' some types in some situations : float, binary_float, binary_float, number.
+ * For example:
+ * - with the statement 'select 101 from dual', OCI would report numeric type NUMBER.
+ * - if a column is declared as "INT", OCI would report also NUMBER.
+ *  
  *
  * @note
  * For all other OCILIB types, it returns OCI_UNKNOWN
@@ -6479,6 +6649,7 @@ OCI_EXPORT unsigned int OCI_API OCI_ColumnGetSubType
  * - OCI_NUM_BIGUINT
  * - OCI_NUM_DOUBLE
  * - OCI_NUM_FLOAT
+ * - OCI_NUM_NUMBER
  *
  * @return
  * Return TRUE on success otherwise FALSE
@@ -6511,6 +6682,7 @@ OCI_EXPORT boolean OCI_API OCI_SetStructNumericType
  *   - OCI_NUM_BIGUINT
  *   - OCI_NUM_DOUBLE
  *   - OCI_NUM_FLOAT
+ *   - OCI_NUM_NUMBER
  *
  * @return
  * Return TRUE on success otherwise FALSE
@@ -6581,6 +6753,48 @@ OCI_EXPORT boolean OCI_API OCI_GetStruct
     void          *row_struct,
     void          *row_struct_ind
 );
+
+/**
+* @brief
+* Return the current Number value of the column at the given index in the resultset
+*
+* @param rs    - Resultset handle
+* @param index - Column position
+*
+* @note
+* Column position starts at 1.
+*
+* @return
+* The column current row value or 0 if index is out of bounds
+*
+*/
+OCI_EXPORT OCI_Number * OCI_API OCI_GetNumber
+(
+    OCI_Resultset *rs,
+    unsigned int   index
+);
+
+/**
+* @brief
+* Return the current number value of the column from its name in the resultset
+*
+* @param rs    - Resultset handle
+* @param name  - Column name
+*
+* @note
+* The column name is case insensitive
+*
+* @return
+* The column current row value or 0 if no column found with the given name
+*
+*/
+
+OCI_EXPORT OCI_Number * OCI_API OCI_GetNumber2
+(
+    OCI_Resultset *rs,
+    const otext   *name
+);
+
 
 /**
  * @brief
@@ -6850,18 +7064,17 @@ OCI_EXPORT big_uint OCI_API OCI_GetUnsignedBigInt2
  *
  * - Numerics (based on the current connection handle numeric format)
  * - Binary doubles and floats (using the standard C Library functions)
+ * - OCI_Number (based on the current connection handle numeric format)
  * - OCI_Date (based on the current connection handle date format)
  * - OCI_Timestamp (based on the current connection handle date format)
  * - OCI_Interval (based on Oracle default conversion)
- * - OCI_Lob (maximum number of character is defined by OCI_SIZE_BUFFER)
- * - OCI_Long
- * - OCI_File (maximum number of character is defined by OCI_SIZE_BUFFER)
- * - RAW buffer
- *
- * The following type are not supported for implicit conversion:
- * - OCI_Statement
- * - OCI_Coll
- * - OCI_Object
+ * - OCI_Lob (for BLOBs, output is expressed in hexadecimal)
+ * - OCI_Long  (for BLONGs, output is expressed in hexadecimal)
+ * - OCI_File ("[directory]/[name]" will be output)
+ * - OCI_Object (Textual SQL string representation)
+ * - OCI_Coll (Textual SQL string representation)
+ * - RAW buffer (expressed in hexadecimal)
+ * - OCI_Statement (SQL statement string or cursor name)
  *
  * @return
  * The column current row value or NULL if index is out of bounds
@@ -7438,6 +7651,51 @@ OCI_EXPORT boolean OCI_API OCI_IsNull
 (
     OCI_Resultset *rs,
     unsigned int   index
+);
+
+/**
+ * @brief
+ * Return the size of the value of the column at the given index in the resultset
+ *
+ * @param rs    - Resultset handle
+ * @param index - Column position
+ *
+ * @note
+ * Column position starts at 1.
+ *
+ * @warning
+ * For binds of type OCI_CDT_TEXT (strings), the returned value is expressed in
+ * number of characters.
+ *
+ * @return value size of 0 if the value is NULL
+ *
+ */
+
+OCI_EXPORT unsigned int OCI_API OCI_GetDataSize
+(
+    OCI_Resultset *rs,
+    unsigned int   index
+);
+
+/**
+ * @brief
+ * Return the size of the value of the column from its name in the resultset
+ *
+ * @param rs    - Resultset handle
+ * @param name  - Column name
+ *
+ * @warning
+ * For binds of type OCI_CDT_TEXT (strings), the returned value is expressed in
+ * number of characters.
+ *
+ * @return value size of 0 if the value is NULL
+ *
+ */
+
+OCI_EXPORT unsigned int OCI_API OCI_GetDataSize2
+(
+    OCI_Resultset *rs,
+    const otext   *name
 );
 
 /**
@@ -8146,6 +8404,22 @@ OCI_EXPORT boolean OCI_API OCI_ElemGetBoolean
 );
 
 /**
+* @brief
+* Return the number value of the given collection element
+*
+* @param elem   - Element handle
+*
+* @return
+* number handle or NULL on failure
+*
+*/
+
+OCI_EXPORT OCI_Number* OCI_API OCI_ElemGetNumber
+(
+    OCI_Elem *elem
+);
+
+/**
  * @brief
  * Return the short value of the given collection element
  *
@@ -8472,6 +8746,24 @@ OCI_EXPORT boolean OCI_API OCI_ElemSetBoolean
 (
     OCI_Elem *elem,
     boolean   value
+);
+
+/**
+* @brief
+* Set a number value to a collection element
+*
+* @param elem   - Element handle
+* @param value  - number value
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT boolean OCI_API OCI_ElemSetNumber
+(
+    OCI_Elem   *elem,
+    OCI_Number *value
 );
 
 /**
@@ -8952,6 +9244,24 @@ OCI_EXPORT OCI_Resultset * OCI_API OCI_GetNextResultset
 );
 
 /**
+* @brief
+* Register a register output bind placeholder
+*
+* @param stmt - Statement handle
+* @param name - Output bind name
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT boolean OCI_API OCI_RegisterNumber
+(
+    OCI_Statement *stmt,
+    const otext   *name
+);
+
+/**
  * @brief
  * Register a short output bind placeholder
  *
@@ -9323,6 +9633,7 @@ OCI_EXPORT boolean OCI_API OCI_RegisterRef
  * - OCI_CST_BEGIN   : begin (pl/sql) statement
  * - OCI_CST_DECLARE : declare (pl/sql) statement
  * - OCI_CST_CALL    : kpu call
+ * - OCI_CST_MERGE   : merge statement
  *
  * @return
  * The statement type on success or OCI_UNKOWN on error
@@ -9416,7 +9727,7 @@ OCI_EXPORT unsigned int OCI_API OCI_GetBindMode
 
 /**
  * @brief
- * Set the bind allocation mode of a SQL statement
+ * Set the current bind allocation mode that will be used for subsequent binding calls
  *
  * @param stmt - Statement handle
  * @param mode - bind allocation mode value
@@ -9426,6 +9737,15 @@ OCI_EXPORT unsigned int OCI_API OCI_GetBindMode
  *  - OCI_BAM_EXTERNAL : bind variable are allocated by user code
  *  - OCI_BAM_INTERNAL : bind variable are allocated internally
  *
+ * @warning
+ * This call has to be made after preparing a statement as OCI_Prepare() reset it by default to OCI_BAM_EXTERNAL.
+ * When calling an OCI_BindXXXX() call, this value is used and stored in the OCI_Bind object created during the bind call.
+ * Each bind can have is own allocation mode that is returned by OCI_BindGetAllocationMode()
+ * OCI_SetBindAllocation() can be called before each binding call if needed, resulting having some bind allocated externally and other ones internally.
+ *
+ * @note
+ * Refer to the section "Binding variables and arrays" of the documention about allocation mode as OCI_BAM_INTERNAL is not compatible with all bind calls
+ * 
  */
 
 OCI_EXPORT boolean OCI_API OCI_SetBindAllocation
@@ -9436,13 +9756,17 @@ OCI_EXPORT boolean OCI_API OCI_SetBindAllocation
 
 /**
  * @brief
- * Return the bind allocation mode of a SQL statement
+ * Return the current bind allocation mode used for subsequent binding calls
  *
  * @param stmt - Statement handle
  *
  * @note
  * See OCI_SetBindAllocation() for possible values
  * Default value is OCI_BAM_EXTERNAL
+ *
+ * @warning
+ * Each OCI_Bind object has its own allocation mode that may differ from the one returned by OCI_GetBindAllocation()
+ * The return value of OCI_GetBindAllocation() is the mode that will be used for any subsequent OCI_BindXXXX() calls
  *
  * @note
  * if stmt is NULL, the return value is OCI_UNKNOWN
@@ -9996,6 +10320,9 @@ OCI_EXPORT boolean OCI_API OCI_LobWrite2
  * - Bytes for BLOBs
  * - Characters for CLOBs/NCLOBs
  *
+ * @note
+ * If current offset was beyond the new size, it is then updated to an eof position in order for further write calls to append data
+ *
  * @return
  * TRUE on success otherwise FALSE
  *
@@ -10055,7 +10382,9 @@ OCI_EXPORT unsigned int OCI_API OCI_LobGetChunkSize
  *
  * @note
  * Absolute position starts at 0.
- * Erasing means that spaces overwrite the existing LOB value.
+ * Erasing means "overwriting" the range of values at the given offset with:
+ *   - spaces for CLOB/NCLOB
+ *   - 'zero' bytes for BLOB  
  *
  * @return
  * Number of bytes (BLOB) or characters (CLOB/NCLOB) erased on success
@@ -10626,7 +10955,7 @@ OCI_EXPORT boolean OCI_API OCI_FileExists
  * @param file  - File handle
  * @param dir   - File directory
  * @param name  - File name
- *
+ *in
  * @note
  * - For local FILEs only
  * - Files fetched from resultset can't be assigned a new directory and name
@@ -10942,6 +11271,387 @@ OCI_EXPORT void * OCI_API OCI_LongGetBuffer
 );
 
 /**
+* @}
+*/
+
+/**
+* @defgroup OcilibCApiOracleNumber Oracle NUMBER manipulation (optional)
+* @{
+*
+* OCILIB encapsulates Oracle SQL all Numeric types using C native data types.
+* But it also provides an optional OCI_Number handle for manipulating and accessing Oracle NUMBER type.
+* OCI_Number provides management for some special value that cannot be addressed in C such as positive 
+* and negative infinity.
+*
+* @par Example
+* @include number.c
+*
+*/
+
+/**
+* @brief
+* Create a local number object
+*
+* @param con - Connection handle
+*
+* @note
+* Parameter 'con' can be NULL in order to manipulate numbers
+* independently from database connections
+*
+* @return
+* Return the number handle on success otherwise NULL on failure
+*
+*/
+
+OCI_EXPORT OCI_Number * OCI_API OCI_NumberCreate
+(
+    OCI_Connection *con
+);
+
+/**
+* @brief
+* Free a number object
+*
+* @param number - Number handle
+*
+* @warning
+* Only Numbers created with OCI_NumberCreate() should be freed by OCI_NumberFree()
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT boolean OCI_API OCI_NumberFree
+(
+    OCI_Number *number
+);
+
+/**
+* @brief
+* Create an array of number object
+*
+* @param con    - Connection handle
+* @param nbelem - number of elements in the array
+*
+* @note
+* see OCI_NumberCreate() for more details
+*
+* @return
+* Return the number handle array on success otherwise NULL on failure
+*
+*/
+
+OCI_EXPORT OCI_Number ** OCI_API OCI_NumberArrayCreate
+(
+    OCI_Connection *con,
+    unsigned int    nbelem
+);
+
+/**
+* @brief
+* Free an array of number objects
+*
+* @param numbers - Array of number objects
+*
+* @warning
+* Only arrays of numbers created with OCI_NumberArrayCreate() should be freed by OCI_NumberArrayFree()
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT boolean OCI_API OCI_NumberArrayFree
+(
+    OCI_Number **numbers
+);
+
+/**
+* @brief
+* Assign the value of a number handle to another one
+*
+* @param number     - Destination number handle
+* @param number_src - Source number handle
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT int OCI_API OCI_NumberAssign
+(
+    OCI_Number *number,
+    OCI_Number *number_src
+);
+
+/**
+* @brief
+* Convert a number value from the given number handle to a string
+*
+* @param number - source number handle
+* @param fmt    - Number format
+* @param size   - Destination string size in characters
+* @param str    - Destination date string
+*
+* @note
+* Output string can be one the following 'magic strings':
+*   - '~'  for positive infinity
+*   - '-~' for negative infinity
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT boolean OCI_API OCI_NumberToText
+(
+    OCI_Number      *number,
+    const otext     *fmt,
+    int              size,
+    otext           *str
+);
+
+/**
+* @brief
+* Convert a string to a number and store it in the given number handle
+*
+* @param number - Destination number handle
+* @param str    - Source number string
+* @param fmt    - Number format
+*
+* @note
+* Input string can be one the following 'magic strings':
+*   - '~'  for positive infinity
+*   - '-~' for negative infinity
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT boolean OCI_API OCI_NumberFromText
+(
+    OCI_Number      *number,
+    const otext     *str,
+    const otext     *fmt
+);
+
+/**
+* @brief
+* Return the number value content
+*
+* @param number  - number handle
+*
+* @note
+* Returned content is a buffer of 22 bytes corresponding to Oracle C native 
+* representation of NUMBER values
+* See oracle Documentation of its layout
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT unsigned char * OCI_API OCI_NumberGetContent
+(
+    OCI_Number *number
+);
+
+/**
+* @brief
+* Assign the number value content
+*
+* @param number  - number handle
+* @param content - raw number content
+*
+* @note
+* See OCI_NumberSetContent() for more information
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT boolean OCI_API OCI_NumberSetContent
+(
+    OCI_Number     *number,
+    unsigned char  *content
+);
+
+/**
+* @brief
+* Assign the number value with the value of a native C numeric type
+*
+* @param number - number handle
+* @param type   - native C type to assign
+* @param value  - pointer to value to set
+*
+* @note
+* Argument @param type can be :
+*
+* - OCI_NUM_SHORT     : value is a pointer to a signed short
+* - OCI_NUM_USHORT    : value is a pointer to an unsigned short
+* - OCI_NUM_INT       : value is a pointer to a signed int
+* - OCI_NUM_UINT      : value is a pointer to an unsigned short
+* - OCI_NUM_BIGINT    : value is a pointer to a signed big_int
+* - OCI_NUM_BIGUINT   : value is a pointer to an unsigned big_uint
+* - OCI_NUM_FLOAT     : value is a pointer to an float
+* - OCI_NUM_DOUBLE    : value is a pointer to a double
+* - OCI_NUM_NUMBER    : value is a pointer to the return value of OCI_NumberGetContent()
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT boolean OCI_API OCI_NumberSetValue
+(
+    OCI_Number     *number,
+    unsigned int    type,
+    void           *value
+);
+
+/**
+* @brief
+* Assign the number value to a native C numeric type
+*
+* @param number - number handle
+* @param type   - native C type to assign
+* @param value  - pointer to a native C variable 
+*
+* @note
+* See OCI_NumberSetValue() for more information
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT boolean OCI_API OCI_NumberGetValue
+(
+    OCI_Number     *number,
+    unsigned int    type,
+    void           *value
+);
+
+/**
+* @brief
+* Add the value of a native C numeric type to the given number
+*
+* @param number - number handle
+* @param type   - native C type of the variable
+* @param value  - pointer to a native C variable to add
+*
+* @note
+* See OCI_NumberSetValue() for more information
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT boolean OCI_API OCI_NumberAdd
+(
+    OCI_Number     *number,
+    unsigned int    type,
+    void           *value
+);
+
+/**
+* @brief
+* Subtract the value of a native C numeric type to the given number
+*
+* @param number - number handle
+* @param type   - native C type of the variable
+* @param value  - pointer to a native C variable to subtract
+*
+* @note
+* See OCI_NumberSetValue() for more information
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT boolean OCI_API OCI_NumberSub
+(
+    OCI_Number     *number,
+    unsigned int    type,
+    void           *value
+);
+
+/**
+* @brief
+* Multiply the given number with the value of a native C numeric
+*
+* @param number - number handle
+* @param type   - native C type of the variable
+* @param value  - pointer to a native C variable to multiply by
+*
+* @note
+* See OCI_NumberSetValue() for more information
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT boolean OCI_API OCI_NumberMultiply
+(
+    OCI_Number     *number,
+    unsigned int    type,
+    void           *value
+);
+
+/**
+* @brief
+* Divide the given number with the value of a native C numeric
+*
+* @param number - number handle
+* @param type   - native C type of the variable
+* @param value  - pointer to a native C variable to divide by
+*
+* @note
+* See OCI_NumberSetValue() for more information
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT boolean OCI_API OCI_NumberDivide
+(
+    OCI_Number     *number,
+    unsigned int    type,
+    void           *value
+);
+
+/**
+ * @brief
+ * Compares two number handles
+ *
+ * @param number1 - number1 handle
+ * @param number2 - number2 handle
+ *
+ * @return
+ * - -1 if number1 is smaller than number2,
+ * -  0 if they are equal
+ * -  1 if number1 is greater than number2.
+ *
+ */
+
+OCI_EXPORT int OCI_API OCI_NumberCompare
+(
+    OCI_Number *number1,
+    OCI_Number *number2
+);
+
+/**
+* @}
+*/
+
+/**
  * @}
  */
 
@@ -11135,6 +11845,8 @@ OCI_EXPORT int OCI_API OCI_DateCompare
  * @param date  - Date1 handle
  * @param date2 - Date2 handle
  *
+ * The number of days is the difference of (date2 - date)
+ * 
  * @return
  * Number of days on success otherwise OCI_ERROR on failure
  *
@@ -11587,6 +12299,9 @@ OCI_EXPORT unsigned int OCI_API OCI_TimestampGetType
  *
  * @param tmsp     - Destination Timestamp handle
  * @param tmsp_src - Source Timestamp handle
+ *
+ * @note
+ * Both timestamp handles must be of the same type
  *
  * @return
  * TRUE on success otherwise FALSE
@@ -12560,6 +13275,29 @@ OCI_EXPORT boolean OCI_API OCI_ObjectGetBoolean
 );
 
 /**
+* @brief
+* Return the number value of the given object attribute
+*
+* @param obj  - Object handle
+* @param attr - Attribute name
+*
+* @note
+* If the attribute is found in the object descriptor attributes list, then a
+* data type check is performed for integrity.
+* OCI_ObjectGetNumber() returns a valid value only for number based attributes
+*
+* @return
+* Attribute value or NULL on failure or wrong attribute type
+*
+*/
+
+OCI_EXPORT OCI_Number* OCI_API OCI_ObjectGetNumber
+(
+    OCI_Object  *obj,
+    const otext *attr
+);
+
+/**
  * @brief
  * Return the short value of the given object attribute
  *
@@ -13022,6 +13760,26 @@ OCI_EXPORT boolean OCI_API OCI_ObjectSetBoolean
     OCI_Object  *obj,
     const otext *attr,
     boolean      value
+);
+
+/**
+* @brief
+* Set an object attribute of type number
+*
+* @param obj    - Object handle
+* @param attr   - Attribute name
+* @param value  - number value
+*
+* @return
+* TRUE on success otherwise FALSE
+*
+*/
+
+OCI_EXPORT boolean OCI_API OCI_ObjectSetNumber
+(
+    OCI_Object  *obj,
+    const otext *attr,
+    OCI_Number  *value
 );
 
 /**
@@ -13820,7 +14578,7 @@ OCI_EXPORT OCI_TypeInfo * OCI_API OCI_TypeInfoGet
  * @note
  * Possible values for parameter type are :
  *
- * - OCI_UNKNOWM
+ * - OCI_UNKNOWN
  * - OCI_TIF_TABLE
  * - OCI_TIF_VIEW
  * - OCI_TIF_TYPE
@@ -13915,6 +14673,52 @@ OCI_EXPORT const otext * OCI_API OCI_TypeInfoGetName
 );
 
 /**
+* @brief
+* Indicate if the given UDT type if final
+*
+* @note
+* Non-final types are virtual UDT type that can be inherited
+* 
+* @param typinf - Type info handle
+*
+* @note
+*  This property is only valid for UDTs (OCI_TIF_TYPE)
+*  
+* @return
+*  - when OCI_TypeInfoGetType() returns OCI_UNKNOWN, OCI_TIF_TABLE, OCI_TIF_VIEW: returns TRUE
+*  - when OCI_TypeInfoGetType() returns OCI_TIF_TYPE: returns TRUE if the type is final and FALSE if it is virtual
+*
+*/
+
+OCI_EXPORT boolean OCI_API OCI_TypeInfoIsFinalType
+(
+    OCI_TypeInfo *typinf
+);
+
+/**
+* @brief
+* Return the super type of the given type (e.g. parent type for a derived ORACLE UDT type)
+*
+* @param typinf - Type info handle
+*
+* @note
+*  This property is only valid for UDTs (OCI_TIF_TYPE)
+*  
+* @return
+*  - when OCI_TypeInfoGetType() returns OCI_UNKNOWN, OCI_TIF_TABLE, OCI_TIF_VIEW: 
+*       - returns NULL
+*  - when OCI_TypeInfoGetType() returns OCI_TIF_TYPE: 
+*       - returns the TypeInfo handle wrapping the parent super type
+*       - returns NULL if the given type is NOT deriving from a base type
+*
+*/
+
+OCI_EXPORT OCI_TypeInfo* OCI_API OCI_TypeInfoGetSuperType
+(
+    OCI_TypeInfo *typinf
+);
+
+/**
  * @}
  */
 
@@ -13950,6 +14754,7 @@ OCI_EXPORT const otext * OCI_API OCI_TypeInfoGetName
  * - OCI_ARG_BIGUINT ----> unsigned big_int *
  * - OCI_ARG_DOUBLE  ----> double *
  * - OCI_ARG_FLOAT ------> float *
+ * - OCI_ARG_NUMBER -----> OCI_Number *
  * - OCI_ARG_TEXT -------> otext *
  * - OCI_ARG_RAW --------> void *
  * - OCI_ARG_DATETIME ---> OCI_Date *
@@ -13986,6 +14791,7 @@ OCI_EXPORT const otext * OCI_API OCI_TypeInfoGetName
  * - '%hi' : (short) ------------> signed 16 bits integer
  * - '%hu' : (unsigned short) ---> unsigned 16 bits integer
  * - '%g'  : (double, float ) ---> Numerics
+ * - '%n'  : (OCI_Number *) -----> Number
  * - '%r'  : (OCI_Ref *) --------> Reference
  * - '%o'  : (OCI_Object *) -----> Object  (not implemented yet)
  * - '%c'  : (OCI_Coll *) -------> collection  (not implemented yet)
@@ -17314,9 +18120,18 @@ OCI_EXPORT boolean OCI_API OCI_QueueTableMigrate
  * - OCI_CNT_ALL       : request for all changes
  *
  * @note
+ * Parameter 'port' and 'timeout' are optional (use value 0 a optional value)
+ * 
+ * @note
  * OCI_ENV_EVENTS flag must be passed to OCI_Initialize() to be able to use
  * subscriptions
  *
+ * @ @warning Port usage
+ * All notifications are using the same port. 
+ * Port numbe can be either:
+ *   - determined automatically by Oracle client once the first subscription had been created and can be retrieved using OCI_SubscriptionGetPort()
+ *   - Set by the parameter 'port' during the first call to OCI_SubscriptionRegister(). In this case later calls can provide same port number or 0
+ * 
  * @note
  * Requires Oracle Client 10gR2 or above
  *
@@ -18138,6 +18953,28 @@ OCI_EXPORT const void * OCI_API OCI_HandleGetSubscription
 #endif
 
 /**
+* @defgroup OcilibCApiEnvironmentVariables Environment Variables
+* @{
+*
+* Some environment variables can be defined in order to activate specific features
+* They must have one of the following values (case insensitive) for being enabled : "TRUE", "1"
+*
+* - "OCILIB_WORKAROUND_UTF16_COLUMN_NAME": This variable enables an experimental workaround for the Oracle bug 9838993:
+*    - When calling OCI_GetResultset(), OCILIB queries column names against the Oracle Client
+*    - Unicode builds of OCILIB initialize Oracle client into UTF16 mode
+*    - In such environments, a memory leak occurs when statements are re-executed multiple times followed by OCI_GetResultset()
+*    - This workaround retrieves column names using direct access to undocumented Oracle structures instead of using buggy Oracle calls
+*    - As Oracle undocumented structures may change upon versions, this workaround is provided as-is in case the Oracle bug represents an real issue for applications
+*    - This workaround has been tested with 32bit and 64bit Oracle 12g clients and Unicode OCILIB builds
+*/
+
+#define VAR_OCILIB_WORKAROUND_UTF16_COLUMN_NAME "OCILIB_WORKAROUND_UTF16_COLUMN_NAME"
+
+/**
+* @}
+*/
+
+/**
  * @defgroup OcilibCApiDemoApplication OCILIB main demo application code
  * @{
  *
@@ -18205,119 +19042,14 @@ OCI_EXPORT const void * OCI_API OCI_HandleGetSubscription
 
 /* macro added in version 3.3.0 */
 
-/**
- * @brief
- * [OBSOLETE] Set the bind variable at the given index to null
- *
- * @param stmt  - Statement handle
- * @param index - Index of the bind variable
- *
- * @warning
- * This call is obsolete ! Use OCI_BindSetNull() instead.
- *
- * @note
- * There is no notion of null value in C.
- * It's necessary to explicitly tell Oracle that the bind has a null value.
- * It must be done before an OCI_Execute() call
- *
- * @warning
- * Index starts with 1
- *
- * @note
- * For handled based data types (non scalar types), OCILIB performs an extra
- * check on handles and set the bind status to null is the handle is null
- *
- * @return
- * TRUE on success otherwise FALSE
- */
-
 #define OCI_SetNull(stmt, index)                                               \
     OCI_BindSetNull(OCI_GetBind(stmt, index))
-
-/**
- * @brief
- * [OBSOLETE] Set the bind variable of the given name to null
- *
- * @param stmt  - Statement handle
- * @param name  - Bind variable name
- *
- * @warning
- * This call is obsolete ! Use OCI_BindSetNull() instead.
- *
- * @note
- * There is no notion of null value in C.
- * it's necessary to explicitly tell Oracle that the bind has a null value.
- * It must be done before an OCI_Execute() call
- *
- * @note
- * For handled based data types (non scalar types), OCILIB performs an extra
- * check on handles and set the bind status to null is the handle is null
- *
- * @return
- * TRUE on success otherwise FALSE
- */
 
 #define OCI_SetNull2(stmt, name)                                               \
     OCI_BindSetNull(OCI_GetBind2(stmt, name))
 
-/**
- * @brief
- * [OBSOLETE] Set to null the bind variable at the given position in an input array
- *
- * @param stmt     - Statement handle
- * @param index    - Index of the bind variable
- * @param position - Position in the array
- *
- * @warning
- * This call is obsolete ! Use OCI_BindSetNullAtPos() instead.
- *
- * @note
- * There is no notion of null value in C.
- * It's necessary to explicitly tell Oracle that the bind has a null value.
- * It must be done before an OCI_Execute() call
- *
- * @warning
- * Index and Position starts with 1
- *
- * @note
- * For handled based data types (non scalar types), OCILIB performs an extra
- * check on handles and set the bind status to null is the handle is null
- *
- * @return
- * TRUE on success otherwise FALSE
- *
- */
-
 #define OCI_SetNullAtPos(stmt, index, position)                                \
     OCI_BindSetNullAtPos(OCI_GetBind(stmt, index), position)
-
-/**
- * @brief
- * [OBSOLETE] Set to null the bind variable of the given name in an input array
- *
- * @param stmt     - Statement handle
- * @param name     - Bind variable name
- * @param position - Position in the array
- *
- * @warning
- * This call is obsolete ! Use OCI_BindSetNullAtPos() instead.
- *
- * @note
- * There is no notion of null value in C.
- * It's necessary to explicitly tell Oracle that the bind has a null value.
- * It must be done before an OCI_Execute() call
- *
- * @warning
- * Position starts with 1
- *
- * @note
- * For handled based data types (non scalar types), OCILIB performs an extra
- * check on handles and set the bind status to null is the handle is null
- *
- * @return
- * TRUE on success otherwise FALSE
- *
- */
 
 #define OCI_SetNullAtPos2(stmt, name, position)                                \
     OCI_BindSetNullAtPos(OCI_GetBind2(stmt, name), position)
@@ -18402,11 +19134,11 @@ OCI_EXPORT const void * OCI_API OCI_HandleGetSubscription
 
 /* macro added in version 4.1.0 */
 
-#define OCI_SetDefaultFormatDate(con, fmt)      OCI_SetFormat(cn, OCI_FMT_DATE, fmt)
-#define OCI_SetDefaultFormatNumeric(con, fmt)   OCI_SetFormat(cn, OCI_FMT_NUMERIC, fmt)
+#define OCI_SetDefaultFormatDate(con, fmt)      OCI_SetFormat(con, OCI_FMT_DATE, fmt)
+#define OCI_SetDefaultFormatNumeric(con, fmt)   OCI_SetFormat(con, OCI_FMT_NUMERIC, fmt)
 
-#define OCI_GetDefaultFormatDate(con)           OCI_GetFormat(cn, OCI_FMT_DATE)
-#define OCI_GetDefaultFormatNumeric(con)        OCI_GetFormat(cn, OCI_FMT_NUMERIC)
+#define OCI_GetDefaultFormatDate(con)           OCI_GetFormat(con, OCI_FMT_DATE)
+#define OCI_GetDefaultFormatNumeric(con)        OCI_GetFormat(con, OCI_FMT_NUMERIC)
 
 #define OCI_STRING_FORMAT_NUM_BIN               OCI_STRING_FORMAT_NUM_BDOUBLE
 
